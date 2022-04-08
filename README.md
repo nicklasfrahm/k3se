@@ -2,7 +2,7 @@
 
 A lightweight Kubernetes engine that deploys `k3s` clusters declaratively based on a cluster configuration file.
 
-The name is a hommage to the German word for cheese, _Käse_.
+The name is a hommage to the German word for cheese, _Käse [ˈkɛːzə]_.
 
 ## License 📄
 
