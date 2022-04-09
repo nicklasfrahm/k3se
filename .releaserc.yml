@@ -1,0 +1,22 @@
+# Reference: https://semantic-release.gitbook.io/semantic-release/usage/configuration#branches
+branches:
+  # Support maintenance releases.
+  - name: "+([0-9])?(.{+([0-9]),x}).x"
+  # Default distribution channel.
+  - name: "main"
+  # Release channel for experimental features.
+  - name: "edge"
+  # Prereleases via alpha and beta channel.
+  - name: "beta"
+    prerelease: true
+  - name: "alpha"
+    prerelease: true
+
+# Reference: https://semantic-release.gitbook.io/semantic-release/usage/configuration#repositoryurl
+repositoryUrl: https://github.com/nicklasfrahm/k3se.git
+
+# Reference: https://semantic-release.gitbook.io/semantic-release/usage/configuration#plugins
+plugins:
+  - "@semantic-release/commit-analyzer"
+  - "@semantic-release/release-notes-generator"
+  - ["@semantic-release/github", { assets: [{ path: "release/**" }] }]

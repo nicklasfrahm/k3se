@@ -6,11 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev"
 var help bool
 
 var rootCmd = &cobra.Command{
 	Use:   "k3se",
-	Short: "CLI to manage k3s declaratively",
+	Short: "A lightweight and declarative k3s engine",
 	Long: `  _    _____
  | | _|___ / ___  ___
  | |/ / |_ \/ __|/ _ \
@@ -30,6 +31,7 @@ file.`,
 		cmd.Help()
 		os.Exit(0)
 	},
+	Version:      version,
 	SilenceUsage: true,
 }
 

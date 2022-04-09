@@ -1,0 +1,95 @@
+name: Binaries
+
+on:
+  workflow_dispatch:
+  pull_request:
+  pull_request_target:
+  push:
+
+jobs:
+  build:
+    name: Build
+    # pull_request_target: Only "dependabot[bot]" is allowed to access secrets.
+    # pull_request: All other forks are running without access to secrets.
+    if: |
+      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]') ||
+      (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm
+          - darwin/amd64
+          - windows/amd64
+    steps:
+      - name: Check out
+        if: ${{ github.event_name != 'pull_request_target' }}
+        uses: actions/checkout@v2
+
+        # Allow "dependabot[bot]" to verify its changes with access to secrets and modified code.
+      - name: Checkout for Dependabot
+        if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Go compiler
+        uses: actions/setup-go@v2
+        with:
+          check-latest: true
+
+      - name: Fetch version from git history
+        if: github.ref_protected == true
+        uses: codfish/semantic-release-action@v1
+        id: semantic
+        with:
+          dry_run: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build binary
+        if: github.ref_protected == true
+        run: VERSION=v${{ steps.semantic.outputs.release-version }} UPX=-9 PLATFORM=${{ matrix.platform }} make build
+
+      - name: Build binary
+        if: github.ref_protected == false
+        run: UPX=-9 PLATFORM=${{ matrix.platform }} make build
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: bin/*
+
+  auto-merge:
+    name: Auto-merge
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    needs: [build]
+    steps:
+      - uses: ahmadnassri/action-dependabot-auto-merge@v2
+        with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+  release:
+    name: Release
+    if: github.ref_protected == true
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: binaries
+          path: release
+
+      - name: Create release
+        uses: codfish/semantic-release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
