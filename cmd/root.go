@@ -15,7 +15,7 @@ var rootCmd = &cobra.Command{
 	Long: `  _    _____
  | | _|___ / ___  ___
  | |/ / |_ \/ __|/ _ \
- |   < ___) \__ \  __/
+ |   | ___) \__ \  __/
  |_|\_\____/|___/\___|
 
 A lightweight Kubernetes engine that deploys k3s
