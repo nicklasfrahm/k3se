@@ -1,0 +1,44 @@
+# Version may either be a specific k3s version or a release channel
+# as listed here: https://update.k3s.io/v1-release/channels
+version: stable
+
+# Cluster provides cluster-wide settings that should be applied
+# to all nodes in the cluster. All options are equivalent to the
+# commmand line options of the `k3s` command.
+cluster:
+  tls-san:
+    - kubeapi.example.com
+  disable:
+    - traefik
+  write-kubeconfig-mode: "0644"
+
+# A list of all nodes in the cluster and their connection information.
+nodes:
+  - role: server
+    ssh:
+      host: 192.168.254.254
+      port: 22
+      fingerprint: SHA256:TQJ6O204vLkziGitTEXYzEcF92hkosWPBhHaNaICjTM
+      user: root
+      ssh-key: ~/.ssh/id_rsa
+    node-label:
+      - hardware=dfrobot-rtcm4
+
+  - role: agent
+    ssh:
+      host: 192.168.254.1
+      port: 22
+      fingerprint: SHA256:mjQz8GI7bweqTbcSSNQPEcXtXtP0mN4nQ9H5BSAzM18
+      user: root
+      ssh-key: ~/.ssh/id_rsa
+    node-label:
+      - hardware=medion-e1230
+
+# An SSH proxy, also known as jumpbox or a bastion host
+# can be used to access nodes in a private network.
+ssh-proxy:
+  host: example.com
+  port: 22
+  fingerprint: SHA256:TQJ6O204vLkziGitTEXYzEcF92hkosWPBhHaNaICjTM
+  user: root
+  ssh-key: ~/.ssh/id_rsa
