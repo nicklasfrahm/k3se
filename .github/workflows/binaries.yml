@@ -29,12 +29,12 @@ jobs:
     steps:
       - name: Check out
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
         # Allow "dependabot[bot]" to verify its changes with access to secrets and modified code.
       - name: Checkout for Dependabot
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -83,10 +83,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: binaries
           path: release
