@@ -10,13 +10,13 @@ cluster:
     - kubeapi.example.com
   disable:
     - traefik
-  write-kubeconfig-mode: "0644"
+  write-kubeconfig-mode: "644"
 
 # A list of all nodes in the cluster and their connection information.
 nodes:
   - role: server
     ssh:
-      host: 192.168.254.254
+      host: 127.0.0.1
       fingerprint: SHA256:t/bwWCelgcAEYmQW9XbM4p31e1Qq70ZPWOKK+FRxBCc
       user: nicklasfrahm
       key-file: ~/.ssh/id_ed25519

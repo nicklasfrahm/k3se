@@ -1,4 +1,4 @@
-package k3se
+package ops
 
 import (
 	"errors"

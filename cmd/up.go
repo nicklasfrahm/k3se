@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/nicklasfrahm/k3se/pkg/k3se"
+	"github.com/nicklasfrahm/k3se/pkg/ops"
 )
 
 var upCmd = &cobra.Command{
@@ -19,10 +19,10 @@ argument.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Use manual override for config path if provided.
 		if len(args) == 1 {
-			return k3se.Up(k3se.WithConfigPath(args[0]))
+			return ops.Up(ops.WithConfigPath(args[0]))
 		}
 
-		return k3se.Up()
+		return ops.Up()
 	},
 }
 

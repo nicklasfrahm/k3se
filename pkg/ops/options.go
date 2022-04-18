@@ -1,18 +1,13 @@
-package rexec
+package ops
 
-import (
-	"os"
-	"time"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+const (
+	// Program is used to configure the name of the configuration file.
+	Program = "k3se"
 )
 
 // Options contains the configuration for an operation.
 type Options struct {
-	Logger   *zerolog.Logger
-	SSHProxy *SSHConfig
-	Timeout  time.Duration
+	ConfigPath string
 }
 
 // Option applies a configuration option
@@ -32,22 +27,15 @@ func (o *Options) Apply(options ...Option) (*Options, error) {
 // GetDefaultOptions returns the default options
 // for all operations of this library.
 func GetDefaultOptions() *Options {
-	logger := log.Output(zerolog.ConsoleWriter{
-		Out:        os.Stderr,
-		TimeFormat: time.RFC3339,
-	})
-
 	return &Options{
-		SSHProxy: nil,
-		Timeout:  time.Second * 5,
-		Logger:   &logger,
+		ConfigPath: Program + ".yml",
 	}
 }
 
-// WithSSHProxy configures an SSH bastion host.
-func WithSSHProxy(sshProxy *SSHConfig) Option {
+// WithConfigPath overrides the default configuration path.
+func WithConfigPath(configPath string) Option {
 	return func(options *Options) error {
-		options.SSHProxy = sshProxy
+		options.ConfigPath = configPath
 		return nil
 	}
 }

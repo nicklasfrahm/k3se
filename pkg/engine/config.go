@@ -1,29 +1,24 @@
-package k3se
+package engine
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 
-	"github.com/nicklasfrahm/k3se/pkg/rexec"
+	"github.com/nicklasfrahm/k3se/pkg/sshx"
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	// RoleServer is the role of a control-plane node in k3s.
-	RoleServer = "server"
-	// RoleAgent is the role of a worker node in k3s.
-	RoleAgent = "agent"
-	// Program is used to configure the name of the configuration file.
-	Program = "k3se"
-)
+// Role is the type of a node in the cluster.
+type Role string
 
-// Node describes the configuration of a node.
-type Node struct {
-	Role      string          `yaml:"role"`
-	SSH       rexec.SSHConfig `yaml:"ssh"`
-	NodeLabel []string        `yaml:"node-label"`
-}
+const (
+	// RoleAny is the role selector that matches any node.
+	RoleAny Role = "any"
+	// RoleServer is the role of a control-plane node in k3s.
+	RoleServer Role = "server"
+	// RoleAgent is the role of a worker node in k3s.
+	RoleAgent Role = "agent"
+)
 
 // K3sConfig describes the configuration of a k3s node.
 type K3sConfig struct {
@@ -40,56 +35,33 @@ type Config struct {
 	// channel as specified in the k3s installation options.
 	Version string `yaml:"version"`
 
-	// Config is the desired content of the k3s configuration file.
+	// Config is the desired content of the k3s configuration file
+	// that is shared among all nodes.
 	Cluster K3sConfig `yaml:"config"`
 
-	// Nodes is a list of nodes to deploy the cluster on.
+	// Nodes is a list of nodes to deploy the cluster on. It stores
+	// both, connection information and node-specific configuration.
 	Nodes []Node `yaml:"nodes"`
 
 	// SSHProxy describes the SSH connection configuration
 	// for an SSH proxy, often also referred to as bastion
 	// host or jumpbox.
-	SSHProxy rexec.SSHConfig `yaml:"ssh-proxy"`
+	SSHProxy sshx.Config `yaml:"ssh-proxy"`
 }
 
 // Verify verifies the configuration file.
+// TODO: How do we pass a logger to this function?
+// TODO: Use logger to display configuration errors.
 func (c *Config) Verify() error {
 	if c == nil {
 		return errors.New("configuration empty")
 	}
 
-	checks := []func() error{
-		c.VerifyServerCount,
-	}
-
-	var configInvalid bool
-	for _, check := range checks {
-		if err := check(); err != nil {
-			configInvalid = true
-
-			// TODO: Improve how errors are displayed and handled.
-			fmt.Println(err)
-		}
-	}
-
-	if configInvalid {
-		return errors.New("config invalid")
-	}
-
-	// TODO: Check that backend is not SQLite if HA is enabled.
-
-	return nil
-}
-
-// VerifyServerCount verifies that at least one API server is
-// specified.
-func (c *Config) VerifyServerCount() error {
-	var controlPlanes = 0
-
 	if c.Nodes == nil || len(c.Nodes) == 0 {
 		return errors.New("no nodes specified")
 	}
 
+	var controlPlanes = 0
 	for _, node := range c.Nodes {
 		if node.Role == RoleServer {
 			controlPlanes += 1
@@ -100,7 +72,28 @@ func (c *Config) VerifyServerCount() error {
 		return errors.New("no control-plane nodes specified")
 	}
 
+	if controlPlanes > 1 {
+		return errors.New("unimplemented: multiple control-plane nodes")
+
+		// TODO: Check that backend is not SQLite if HA is enabled.
+	}
+
 	return nil
+}
+
+// NodesByRole returns a list of nodes based on the specified selector.
+// Use RoleAny to match all nodes, RoleAgent to match all worker nodes,
+// and RoleServer to match all control-plane nodes.
+func (c *Config) NodesByRole(selector Role) []*Node {
+	var nodes []*Node
+
+	for _, node := range c.Nodes {
+		if node.Role == selector || selector == RoleAny {
+			nodes = append(nodes, &node)
+		}
+	}
+
+	return nodes
 }
 
 // LoadConfig sets up the configuration parser and loads
