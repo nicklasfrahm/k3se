@@ -46,6 +46,12 @@ func Up(options ...Option) error {
 	// TODO: Copy kubeconfig to /etc/rancher/k3s/k3s.yaml.
 
 	// TODO: Store state on server nodes to allow for configuration diffing later on.
+	// TODO: Fetch state from Git history.
+
+	// Disconnect from all nodes.
+	for _, node := range nodes {
+		node.Disconnect()
+	}
 
 	return nil
 }

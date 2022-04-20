@@ -7,6 +7,7 @@ import (
 	"net"
 	"os/user"
 
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -25,11 +26,13 @@ type Config struct {
 // Client is an augmented SSH client.
 type Client struct {
 	*Options
-	*ssh.Client
+
+	SSH  *ssh.Client
+	SFTP *sftp.Client
 }
 
-// NewClient creates a new SSH client based on an  SSH configuration
-// and connects to it.
+// NewClient creates a new SSH client and a new SFTP client based
+// on an SSH configuration and connects to it.
 func NewClient(config *Config, options ...Option) (*Client, error) {
 	opts, err := GetDefaultOptions().Apply(options...)
 	if err != nil {
@@ -57,7 +60,7 @@ func NewClient(config *Config, options ...Option) (*Client, error) {
 
 	if client.Proxy != nil {
 		// Create a TCP connection from the proxy host to the target.
-		netConn, err := client.Proxy.Client.Dial("tcp", address)
+		netConn, err := client.Proxy.SSH.Dial("tcp", address)
 		if err != nil {
 			return nil, err
 		}
@@ -67,9 +70,12 @@ func NewClient(config *Config, options ...Option) (*Client, error) {
 			return nil, err
 		}
 
-		client.Client = ssh.NewClient(targetConn, channel, req)
+		client.SSH = ssh.NewClient(targetConn, channel, req)
 	} else {
-		if client.Client, err = ssh.Dial("tcp", address, normalizedConfig); err != nil {
+		if client.SSH, err = ssh.Dial("tcp", address, normalizedConfig); err != nil {
+			return nil, err
+		}
+		if client.SFTP, err = sftp.NewClient(client.SSH); err != nil {
 			return nil, err
 		}
 	}
@@ -151,4 +157,23 @@ func (client *Client) normalizeConfig(config *Config) (*ssh.ClientConfig, error)
 		User:            config.User,
 		Timeout:         client.Timeout,
 	}, nil
+}
+
+// Close closes the SFTP connection first as it
+// piggy-backs on the SSH connection. After that
+// the SSH connection of the client is closed.
+func (client *Client) Close() error {
+	if client.SFTP != nil {
+		if err := client.SFTP.Close(); err != nil {
+			return err
+		}
+	}
+
+	if client.SSH != nil {
+		if err := client.SSH.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

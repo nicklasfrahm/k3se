@@ -1,6 +1,8 @@
 package engine
 
-import "github.com/nicklasfrahm/k3se/pkg/sshx"
+import (
+	"github.com/nicklasfrahm/k3se/pkg/sshx"
+)
 
 const (
 	// Program is used to configure the name of the configuration file.
@@ -9,11 +11,11 @@ const (
 
 // Node describes the configuration of a node.
 type Node struct {
-	Role      Role        `yaml:"role"`
-	SSH       sshx.Config `yaml:"ssh"`
-	NodeLabel []string    `yaml:"node-label"`
+	Role   Role        `yaml:"role"`
+	SSH    sshx.Config `yaml:"ssh"`
+	Config K3sConfig   `yaml:"config"`
 
-	*sshx.Client `yaml:"-"`
+	Client *sshx.Client `yaml:"-"`
 }
 
 // Connect establishes a connection to the node.
@@ -37,5 +39,9 @@ func (node *Node) Connect(options ...Option) error {
 
 // Disconnect closes the connection to the node.
 func (node *Node) Disconnect() error {
+	if node.Client != nil {
+		return node.Client.Close()
+	}
+
 	return nil
 }

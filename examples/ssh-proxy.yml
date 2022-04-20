@@ -16,10 +16,18 @@ cluster:
 nodes:
   - role: server
     ssh:
-      host: tph99.nicklasfrahm.xyz
+      host: 127.0.0.1
       fingerprint: SHA256:t/bwWCelgcAEYmQW9XbM4p31e1Qq70ZPWOKK+FRxBCc
       user: nicklasfrahm
       key-file: ~/.ssh/id_ed25519
     config:
       node-label:
         - cpu=i3-7100
+
+# An SSH proxy, also known as jumpbox or a bastion host
+# can be used to access nodes in a private network.
+ssh-proxy:
+  host: tph99.nicklasfrahm.xyz
+  fingerprint: SHA256:t/bwWCelgcAEYmQW9XbM4p31e1Qq70ZPWOKK+FRxBCc
+  user: nicklasfrahm
+  key-file: ~/.ssh/id_ed25519
