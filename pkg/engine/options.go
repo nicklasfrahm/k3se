@@ -1,11 +1,9 @@
 package engine
 
 import (
-	"os"
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
 )
@@ -34,10 +32,7 @@ func (o *Options) Apply(options ...Option) (*Options, error) {
 // GetDefaultOptions returns the default options
 // for all operations of this library.
 func GetDefaultOptions() *Options {
-	logger := log.Output(zerolog.ConsoleWriter{
-		Out:        os.Stderr,
-		TimeFormat: time.RFC3339,
-	})
+	logger := zerolog.Nop()
 
 	return &Options{
 		SSHProxy: nil,

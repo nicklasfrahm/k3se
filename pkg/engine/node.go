@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"io"
+	"path/filepath"
+
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
 )
 
@@ -42,6 +45,40 @@ func (node *Node) Disconnect() error {
 	if node.Client != nil {
 		return node.Client.Close()
 	}
+
+	return nil
+}
+
+// Upload writes the specified content to the remote file on the node.
+func (node *Node) Upload(dst string, src io.Reader) error {
+	// Get base directory for the file.
+	dir := filepath.Dir(dst)
+
+	// Create directory if it does not exist.
+	if err := node.Client.SFTP.Mkdir(dir); err != nil {
+		return err
+	}
+
+	// Upload file.
+	file, err := node.Client.SFTP.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Empty existing file.
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+
+	// Overwrite file content.
+	_, err = io.Copy(file, src)
+	return err
+}
+
+// Exec executes the specified command on the node.
+func (node *Node) Exec(cmd string) error {
+	// TODO: Implement this.
 
 	return nil
 }

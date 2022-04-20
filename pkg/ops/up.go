@@ -21,6 +21,11 @@ func Up(options ...Option) error {
 		return err
 	}
 
+	eng, err := engine.New(engine.WithLogger(opts.Logger))
+	if err != nil {
+		return err
+	}
+
 	// Establish connection to proxy if host is specified.
 	var sshProxy *sshx.Client
 	if config.SSHProxy.Host != "" {
@@ -33,6 +38,10 @@ func Up(options ...Option) error {
 	nodes := config.NodesByRole(engine.RoleAny)
 	for _, node := range nodes {
 		if err := node.Connect(engine.WithSSHProxy(sshProxy)); err != nil {
+			return err
+		}
+
+		if err := eng.Configure(node); err != nil {
 			return err
 		}
 	}
@@ -48,9 +57,15 @@ func Up(options ...Option) error {
 	// TODO: Store state on server nodes to allow for configuration diffing later on.
 	// TODO: Fetch state from Git history.
 
-	// Disconnect from all nodes.
+	// Clean up and disconnect from all nodes.
 	for _, node := range nodes {
-		node.Disconnect()
+		if err := eng.Cleanup(node); err != nil {
+			return err
+		}
+
+		if err := node.Disconnect(); err != nil {
+			return err
+		}
 	}
 
 	return nil

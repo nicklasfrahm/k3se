@@ -1,6 +1,11 @@
 package cmd
 
 import (
+	"os"
+	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
 	"github.com/nicklasfrahm/k3se/pkg/ops"
@@ -17,12 +22,21 @@ by passing a path to the configuration file as a CLI
 argument.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Use manual override for config path if provided.
-		if len(args) == 1 {
-			return ops.Up(ops.WithConfigPath(args[0]))
+		logger := log.Output(zerolog.ConsoleWriter{
+			Out:        os.Stderr,
+			TimeFormat: time.RFC3339,
+		})
+
+		opts := []ops.Option{
+			ops.WithLogger(&logger),
 		}
 
-		return ops.Up()
+		// Use manual override for config path if provided.
+		if len(args) == 1 {
+			opts = append(opts, ops.WithConfigPath(args[0]))
+		}
+
+		return ops.Up(opts...)
 	},
 }
 

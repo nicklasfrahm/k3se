@@ -1,5 +1,7 @@
 package ops
 
+import "github.com/rs/zerolog"
+
 const (
 	// Program is used to configure the name of the configuration file.
 	Program = "k3se"
@@ -8,6 +10,7 @@ const (
 // Options contains the configuration for an operation.
 type Options struct {
 	ConfigPath string
+	Logger     *zerolog.Logger
 }
 
 // Option applies a configuration option
@@ -36,6 +39,14 @@ func GetDefaultOptions() *Options {
 func WithConfigPath(configPath string) Option {
 	return func(options *Options) error {
 		options.ConfigPath = configPath
+		return nil
+	}
+}
+
+// WithLogger overrides the default logger.
+func WithLogger(logger *zerolog.Logger) Option {
+	return func(options *Options) error {
+		options.Logger = logger
 		return nil
 	}
 }
