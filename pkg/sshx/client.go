@@ -75,9 +75,10 @@ func NewClient(config *Config, options ...Option) (*Client, error) {
 		if client.SSH, err = ssh.Dial("tcp", address, normalizedConfig); err != nil {
 			return nil, err
 		}
-		if client.SFTP, err = sftp.NewClient(client.SSH); err != nil {
-			return nil, err
-		}
+	}
+
+	if client.SFTP, err = sftp.NewClient(client.SSH); err != nil {
+		return nil, err
 	}
 
 	return client, nil
