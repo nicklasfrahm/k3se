@@ -55,7 +55,7 @@ func (node *Node) Upload(dst string, src io.Reader) error {
 	dir := filepath.Dir(dst)
 
 	// Create directory if it does not exist.
-	if err := node.Client.SFTP.Mkdir(dir); err != nil {
+	if err := node.Client.SFTP.MkdirAll(dir); err != nil {
 		return err
 	}
 

@@ -68,6 +68,9 @@ func (e *Engine) Configure(node *Node) error {
 		return err
 	}
 
+	// TODO: Configure the "advertise address" based on the first SAN and modify the
+	// kubeconfig accordingly.
+
 	// TODO: Upload configuration and move it to appropriate location using "sudo".
 
 	return nil
