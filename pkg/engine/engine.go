@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/nicklasfrahm/k3se/pkg/sshx"
 	"github.com/rs/zerolog"
 )
 
@@ -78,5 +79,16 @@ func (e *Engine) Configure(node *Node) error {
 
 // Cleanup removes all temporary files from the node.
 func (e *Engine) Cleanup(node *Node) error {
-	return node.Run("rm -rf /tmp/k3se")
+	if err := node.Do(sshx.Cmd{
+		Cmd: "echo $MYVAR > ~/test.txt",
+		Env: map[string]string{
+			"MYVAR": "hello",
+		},
+	}); err != nil {
+		return err
+	}
+
+	return node.Do(sshx.Cmd{
+		Cmd: "rm -rf /tmp/k3se",
+	})
 }
