@@ -76,9 +76,17 @@ func (node *Node) Upload(dst string, src io.Reader) error {
 	return err
 }
 
-// Exec executes the specified command on the node.
-func (node *Node) Exec(cmd string) error {
-	// TODO: Implement this.
+// Run executes the specified command on the node.
+func (node *Node) Run(cmd string) error {
+	session, err := node.Client.SSH.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	if err := session.Run(cmd); err != nil {
+		return err
+	}
 
 	return nil
 }

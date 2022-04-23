@@ -78,5 +78,5 @@ func (e *Engine) Configure(node *Node) error {
 
 // Cleanup removes all temporary files from the node.
 func (e *Engine) Cleanup(node *Node) error {
-	return node.Exec("rm -rf /tmp/k3se")
+	return node.Run("rm -rf /tmp/k3se")
 }
