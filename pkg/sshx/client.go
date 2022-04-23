@@ -160,6 +160,23 @@ func (client *Client) normalizeConfig(config *Config) (*ssh.ClientConfig, error)
 	}, nil
 }
 
+// Do executes a command on the remote host.
+func (client *Client) Do(command Cmd) error {
+	session, err := client.SSH.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	// Set the command to execute.
+	session.Stdin = command.Stdin
+	session.Stdout = command.Stdout
+	session.Stderr = command.Stderr
+
+	// Execute the command.
+	return session.Run(command.String())
+}
+
 // Close closes the SFTP connection first as it
 // piggy-backs on the SSH connection. After that
 // the SSH connection of the client is closed.
