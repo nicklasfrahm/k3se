@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"reflect"
+	"strings"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
 	"gopkg.in/yaml.v3"
@@ -19,6 +20,11 @@ const (
 	RoleServer Role = "server"
 	// RoleAgent is the role of a worker node in k3s.
 	RoleAgent Role = "agent"
+)
+
+var (
+	// Channels is a list of the available release channels.
+	Channels = []string{"stable", "latest", "testing"}
 )
 
 // K3sConfig describes the configuration of a k3s node.
@@ -83,6 +89,17 @@ type Config struct {
 func (c *Config) Verify() error {
 	if c == nil {
 		return errors.New("configuration empty")
+	}
+
+	channelValid := false
+	for _, channel := range Channels {
+		if channel == c.Version {
+			channelValid = true
+			break
+		}
+	}
+	if !channelValid {
+		return errors.New("unsupported version must be one of: " + strings.Join(Channels, ", "))
 	}
 
 	if c.Nodes == nil || len(c.Nodes) == 0 {

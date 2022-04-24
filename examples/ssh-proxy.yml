@@ -7,7 +7,7 @@ version: stable
 # commmand line options of the `k3s` command.
 cluster:
   tls-san:
-    - kubeapi.example.com
+    - tph99.nicklasfrahm.xyz
   disable:
     - traefik
   write-kubeconfig-mode: "644"
@@ -22,7 +22,7 @@ nodes:
       key-file: ~/.ssh/id_ed25519
     config:
       node-label:
-        - cpu=i3-7100
+        - site=tph99
 
 # An SSH proxy, also known as jumpbox or a bastion host
 # can be used to access nodes in a private network.

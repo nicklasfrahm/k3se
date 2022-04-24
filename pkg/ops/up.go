@@ -45,13 +45,11 @@ func Up(options ...Option) error {
 		if err := eng.Configure(node); err != nil {
 			return err
 		}
+
+		if err := eng.Install(node); err != nil {
+			return err
+		}
 	}
-
-	// TODO: Create configuration file at /etc/rancher/k3s/config.yaml
-
-	// TODO: Copy installation script to /tmp/k3s-install.sh
-
-	// TODO: Run installation script via sudo.
 
 	// TODO: Copy kubeconfig to /etc/rancher/k3s/k3s.yaml.
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
@@ -121,6 +122,24 @@ func (e *Engine) Configure(node *Node) error {
 	// TODO: Upload configuration and move it to appropriate location using "sudo".
 
 	return nil
+}
+
+// Install runs the installation script on the node.
+func (e *Engine) Install(node *Node) error {
+	if err := node.Do(sshx.Cmd{
+		Cmd: "sudo /tmp/k3se/install.sh",
+		Env: map[string]string{
+			"INSTALL_K3s_CHANNEL": e.Spec.Version,
+		},
+		Stdout: os.Stdout,
+	}); err != nil {
+		return err
+	}
+
+	// Force restart as the installer may have changed the configuration.
+	return node.Do(sshx.Cmd{
+		Cmd: "sudo systemctl restart k3s",
+	})
 }
 
 // Cleanup removes all temporary files from the node.
