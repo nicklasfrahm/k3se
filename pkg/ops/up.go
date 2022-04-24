@@ -17,12 +17,13 @@ func Up(options ...Option) error {
 	if err != nil {
 		return err
 	}
-	if err := config.Verify(); err != nil {
-		return err
-	}
 
 	eng, err := engine.New(engine.WithLogger(opts.Logger))
 	if err != nil {
+		return err
+	}
+
+	if err := eng.SetSpec(config); err != nil {
 		return err
 	}
 

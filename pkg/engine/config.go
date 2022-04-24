@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"io/ioutil"
+	"reflect"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
 	"gopkg.in/yaml.v3"
@@ -25,6 +26,33 @@ type K3sConfig struct {
 	WriteKubeconfigMode string   `yaml:"write-kubeconfig-mode"`
 	TLSSAN              []string `yaml:"tls-san"`
 	NodeLabel           []string `yaml:"node-label"`
+	Disable             []string `yaml:"disable"`
+	// TODO: Add missing config options as specified here:
+	// https://rancher.com/docs/k3s/latest/en/installation/install-options/server-config/#k3s-server-cli-help
+}
+
+// Merge combines two configurations.
+func (c K3sConfig) Merge(config *K3sConfig) K3sConfig {
+	merged := c
+
+	dst := reflect.ValueOf(&merged).Elem()
+	src := reflect.ValueOf(config).Elem()
+
+	for i := 0; i < src.Type().NumField(); i++ {
+		field := src.Type().Field(i)
+
+		if field.Type.Kind() == reflect.Slice {
+			// Merge slices.
+			dst.Field(i).Set(reflect.AppendSlice(dst.Field(i), src.Field(i)))
+		} else {
+			// Overwrite field value if not empty.
+			if !src.Field(i).IsZero() {
+				dst.Field(i).Set(src.Field(i))
+			}
+		}
+	}
+
+	return merged
 }
 
 // Config describes the state of a k3s cluster. For general
@@ -35,9 +63,9 @@ type Config struct {
 	// channel as specified in the k3s installation options.
 	Version string `yaml:"version"`
 
-	// Config is the desired content of the k3s configuration file
+	// Cluster is the desired content of the k3s configuration file
 	// that is shared among all nodes.
-	Cluster K3sConfig `yaml:"config"`
+	Cluster K3sConfig `yaml:"cluster"`
 
 	// Nodes is a list of nodes to deploy the cluster on. It stores
 	// both, connection information and node-specific configuration.

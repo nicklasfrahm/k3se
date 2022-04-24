@@ -8,6 +8,7 @@ import (
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
 	"github.com/rs/zerolog"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -20,6 +21,8 @@ type Engine struct {
 
 	sync.Mutex
 	installer []byte
+
+	Spec *Config
 }
 
 // New creates a new Engine.
@@ -57,9 +60,23 @@ func (e *Engine) Installer() ([]byte, error) {
 	return e.installer, nil
 }
 
+// SetSpec configures the desired state of the cluster. Note
+// that the config will only be applied if the verification
+// succeeds.
+func (e *Engine) SetSpec(config *Config) error {
+	if err := config.Verify(); err != nil {
+		return err
+	}
+
+	e.Spec = config
+
+	return nil
+}
+
 // Configure uploads the installer and the configuration
 // prior to a node prior to running the installation.
 func (e *Engine) Configure(node *Node) error {
+	// Upload the installer.
 	installer, err := e.Installer()
 	if err != nil {
 		return err
@@ -69,8 +86,20 @@ func (e *Engine) Configure(node *Node) error {
 		return err
 	}
 
+	// Create the node configuration.
+	config := e.Spec.Cluster.Merge(&node.Config)
+
 	// TODO: Configure the "advertise address" based on the first SAN and modify the
 	// kubeconfig accordingly.
+
+	configBytes, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	if err := node.Upload("/tmp/k3se/config.yaml", bytes.NewReader(configBytes)); err != nil {
+		return err
+	}
 
 	// TODO: Upload configuration and move it to appropriate location using "sudo".
 
@@ -79,15 +108,6 @@ func (e *Engine) Configure(node *Node) error {
 
 // Cleanup removes all temporary files from the node.
 func (e *Engine) Cleanup(node *Node) error {
-	if err := node.Do(sshx.Cmd{
-		Cmd: "echo $MYVAR > ~/test.txt",
-		Env: map[string]string{
-			"MYVAR": "hello",
-		},
-	}); err != nil {
-		return err
-	}
-
 	return node.Do(sshx.Cmd{
 		Cmd: "rm -rf /tmp/k3se",
 	})
