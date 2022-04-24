@@ -66,6 +66,11 @@ func (node *Node) Upload(dst string, src io.Reader) error {
 	}
 	defer file.Close()
 
+	// Restrict permissions.
+	if err := node.Client.SFTP.Chmod(dst, 0644); err != nil {
+		return err
+	}
+
 	// Empty existing file.
 	if err := file.Truncate(0); err != nil {
 		return err

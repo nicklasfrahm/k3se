@@ -74,7 +74,7 @@ func (e *Engine) SetSpec(config *Config) error {
 }
 
 // Configure uploads the installer and the configuration
-// prior to a node prior to running the installation.
+// to a node prior to running the installation script.
 func (e *Engine) Configure(node *Node) error {
 	// Upload the installer.
 	installer, err := e.Installer()
@@ -83,6 +83,11 @@ func (e *Engine) Configure(node *Node) error {
 	}
 
 	if err := node.Upload("/tmp/k3se/install.sh", bytes.NewReader(installer)); err != nil {
+		return err
+	}
+	if err := node.Do(sshx.Cmd{
+		Cmd: "chmod +x /tmp/k3se/install.sh",
+	}); err != nil {
 		return err
 	}
 
@@ -98,6 +103,18 @@ func (e *Engine) Configure(node *Node) error {
 	}
 
 	if err := node.Upload("/tmp/k3se/config.yaml", bytes.NewReader(configBytes)); err != nil {
+		return err
+	}
+
+	if err := node.Do(sshx.Cmd{
+		Cmd: "sudo mkdir -m 755 -p /etc/rancher/k3s",
+	}); err != nil {
+		return err
+	}
+
+	if err := node.Do(sshx.Cmd{
+		Cmd: "sudo chown root:root /tmp/k3se/config.yaml && sudo mv /tmp/k3se/config.yaml /etc/rancher/k3s",
+	}); err != nil {
 		return err
 	}
 
