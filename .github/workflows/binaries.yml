@@ -46,7 +46,7 @@ jobs:
 
       - name: Fetch version from git history
         if: github.ref_protected == true
-        uses: codfish/semantic-release-action@v1
+        uses: docker://ghcr.io/codfish/semantic-release-action:v1
         id: semantic
         with:
           dry_run: true
@@ -93,6 +93,6 @@ jobs:
           path: release
 
       - name: Create release
-        uses: codfish/semantic-release-action@v1
+        uses: docker://ghcr.io/codfish/semantic-release-action:v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
