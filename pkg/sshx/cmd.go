@@ -35,7 +35,5 @@ func (c *Cmd) String() string {
 		cmd = fmt.Sprintf("env %s", cmd)
 	}
 
-	fmt.Println(cmd)
-
 	return cmd
 }
