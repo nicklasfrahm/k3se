@@ -3,9 +3,14 @@ package engine
 import (
 	"io"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
+	"github.com/rs/zerolog"
 )
+
+var loglevel = regexp.MustCompile(`\[([^\]]*)\]\s*`)
 
 const (
 	// Program is used to configure the name of the configuration file.
@@ -18,7 +23,8 @@ type Node struct {
 	SSH    sshx.Config `yaml:"ssh"`
 	Config K3sConfig   `yaml:"config"`
 
-	Client *sshx.Client `yaml:"-"`
+	Client *sshx.Client   `yaml:"-"`
+	Logger zerolog.Logger `yaml:"-"`
 }
 
 // Connect establishes a connection to the node.
@@ -84,4 +90,18 @@ func (node *Node) Upload(dst string, src io.Reader) error {
 // Do executes a command on the node.
 func (node *Node) Do(cmd sshx.Cmd) error {
 	return node.Client.Do(cmd)
+}
+
+// Write writes a log information for the node.
+// TODO: Make this more efficient by reducing allocations.
+func (node *Node) Write(raw []byte) (int, error) {
+	// Remove the log level supplied by the k3s install script.
+	trimmed := loglevel.ReplaceAll(raw, []byte(""))
+
+	lines := strings.Split(string(trimmed), "\n")
+	for i := 0; i < len(lines)-1; i++ {
+		node.Logger.Info().Msg(lines[i])
+	}
+
+	return len(raw), nil
 }

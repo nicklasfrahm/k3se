@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"sync"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
@@ -23,7 +22,8 @@ type Engine struct {
 	sync.Mutex
 	installer []byte
 
-	Spec *Config
+	Nodes []*Node
+	Spec  *Config
 }
 
 // New creates a new Engine.
@@ -61,6 +61,22 @@ func (e *Engine) Installer() ([]byte, error) {
 	return e.installer, nil
 }
 
+// FilterNodes returns a list of nodes based on the specified selector.
+// Use RoleAny to match all nodes, RoleAgent to match all worker nodes,
+// and RoleServer to match all control-plane nodes. Note that this will
+// a nil slice if Connect has not been called yet.
+func (e *Engine) FilterNodes(selector Role) []*Node {
+	var nodes []*Node
+
+	for _, node := range e.Nodes {
+		if node.Role == selector || selector == RoleAny {
+			nodes = append(nodes, node)
+		}
+	}
+
+	return nodes
+}
+
 // SetSpec configures the desired state of the cluster. Note
 // that the config will only be applied if the verification
 // succeeds.
@@ -74,9 +90,9 @@ func (e *Engine) SetSpec(config *Config) error {
 	return nil
 }
 
-// Configure uploads the installer and the configuration
+// ConfigureNode uploads the installer and the configuration
 // to a node prior to running the installation script.
-func (e *Engine) Configure(node *Node) error {
+func (e *Engine) ConfigureNode(node *Node) error {
 	// Upload the installer.
 	installer, err := e.Installer()
 	if err != nil {
@@ -125,26 +141,93 @@ func (e *Engine) Configure(node *Node) error {
 }
 
 // Install runs the installation script on the node.
-func (e *Engine) Install(node *Node) error {
-	if err := node.Do(sshx.Cmd{
+func (e *Engine) Install() error {
+	firstControlplane := e.FilterNodes(RoleServer)[0]
+
+	if err := e.ConfigureNode(firstControlplane); err != nil {
+		return err
+	}
+
+	if err := firstControlplane.Do(sshx.Cmd{
 		Cmd: "sudo /tmp/k3se/install.sh",
 		Env: map[string]string{
 			"INSTALL_K3s_CHANNEL": e.Spec.Version,
 		},
-		Stdout: os.Stdout,
+		Stdout: firstControlplane,
 	}); err != nil {
 		return err
 	}
 
 	// Force restart as the installer may have changed the configuration.
-	return node.Do(sshx.Cmd{
+	return firstControlplane.Do(sshx.Cmd{
 		Cmd: "sudo systemctl restart k3s",
 	})
 }
 
-// Cleanup removes all temporary files from the node.
-func (e *Engine) Cleanup(node *Node) error {
-	return node.Do(sshx.Cmd{
-		Cmd: "rm -rf /tmp/k3se",
-	})
+// Uninstall runs the uninstallation script on all nodes.
+func (e *Engine) Uninstall() error {
+	// Get a list of all nodes.
+	nodes := e.FilterNodes(RoleAny)
+	for _, node := range nodes {
+		// TODO: Check if k3s is installed and if not skip the uninstallation.
+
+		if err := node.Do(sshx.Cmd{
+			Cmd:    "k3s-uninstall.sh",
+			Shell:  true,
+			Stderr: node,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Connect establishes an SSH connection to all nodes.
+func (e *Engine) Connect() error {
+	e.Nodes = make([]*Node, 0)
+
+	// Establish connection to proxy if host is specified.
+	var sshProxy *sshx.Client
+	if e.Spec.SSHProxy.Host != "" {
+		var err error
+		if sshProxy, err = sshx.NewClient(&e.Spec.SSHProxy); err != nil {
+			return err
+		}
+	}
+
+	// Get a list of all nodes and connect to them.
+	for _, node := range e.Spec.Nodes {
+		if err := node.Connect(WithSSHProxy(sshProxy)); err != nil {
+			return err
+		}
+
+		// Inject logger into node.
+		node.Logger = e.Logger.With().Str("host", node.SSH.Host).Logger()
+
+		// Nodes store the connection state so we want to maintain pointers to them.
+		e.Nodes = append(e.Nodes, &node)
+	}
+
+	return nil
+}
+
+// Disconnect closes all SSH connections to all nodes.
+func (e *Engine) Disconnect() error {
+	nodes := e.FilterNodes(RoleAny)
+
+	for _, node := range nodes {
+		// Clean up temporary files before disconnecting.
+		if err := node.Do(sshx.Cmd{
+			Cmd: "rm -rf /tmp/k3se",
+		}); err != nil {
+			return err
+		}
+
+		if err := node.Disconnect(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

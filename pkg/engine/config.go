@@ -126,21 +126,6 @@ func (c *Config) Verify() error {
 	return nil
 }
 
-// NodesByRole returns a list of nodes based on the specified selector.
-// Use RoleAny to match all nodes, RoleAgent to match all worker nodes,
-// and RoleServer to match all control-plane nodes.
-func (c *Config) NodesByRole(selector Role) []*Node {
-	var nodes []*Node
-
-	for _, node := range c.Nodes {
-		if node.Role == selector || selector == RoleAny {
-			nodes = append(nodes, &node)
-		}
-	}
-
-	return nodes
-}
-
 // LoadConfig sets up the configuration parser and loads
 // the configuration file.
 func LoadConfig(configFile string) (*Config, error) {
