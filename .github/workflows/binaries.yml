@@ -33,6 +33,9 @@ jobs:
       - name: Show Vagrant version
         run: vagrant --version
 
+      - name: Generate SSH keypair for Vagrant
+        uses: ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519 -q -N ""
+
       - name: Bring up VMs
         run: make vagrant-up
 
