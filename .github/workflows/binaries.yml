@@ -43,9 +43,9 @@ jobs:
       - name: Test k3s
         working-directory: deploy/vagrant
         run: |
-          vagrant ssh kube1 -c "k3s version"
+          vagrant ssh kube1 -c "k3s --version"
           vagrant ssh kube1 -c "k3s kubectl get nodes"
-          vagrant ssh kube1 -c "k3s kubectl get nodes"
+          vagrant ssh kube1 -c "k3s kubectl cluster-info"
 
       - name: Run k3se down
         run: go run main.go down ${{ matrix.example }}
