@@ -22,6 +22,14 @@ jobs:
       - name: Check out
         uses: actions/checkout@v3
 
+      - name: Install Vagrant and VirtualBox
+        run: |
+          brew install --cask virtualbox
+          brew install --cask vagrant
+
+      - name: Show VirtualBox version
+        run: vboxmanage --version
+
       - name: Show Vagrant version
         run: vagrant --version
 
@@ -53,10 +61,11 @@ jobs:
     name: Build
     # pull_request_target: Only "dependabot[bot]" is allowed to access secrets.
     # pull_request: All other forks are running without access to secrets.
+    runs-on: ubuntu-latest
     if: |
       (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]') ||
       (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]')
-    runs-on: ubuntu-latest
+    needs: [test]
     strategy:
       fail-fast: false
       matrix:
