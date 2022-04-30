@@ -11,7 +11,8 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: macos-latest
+    # TODO: Deploy self-hosted runner on bare-metal with virtualization support.
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
@@ -21,17 +22,6 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v3
-
-      - name: Install Vagrant and VirtualBox
-        run: |
-          brew install --cask virtualbox
-          brew install --cask vagrant
-
-      - name: Show VirtualBox version
-        run: vboxmanage --version
-
-      - name: Show Vagrant version
-        run: vagrant --version
 
       - name: Generate SSH keypair for Vagrant
         run: ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519 -q -N ""
