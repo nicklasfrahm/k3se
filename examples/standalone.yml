@@ -7,19 +7,16 @@ version: stable
 # commmand line options of the `k3s` command.
 cluster:
   tls-san:
-    - tph99.nicklasfrahm.xyz
-  disable:
-    - traefik
+    - localhost
   write-kubeconfig-mode: "644"
 
 # A list of all nodes in the cluster and their connection information.
 nodes:
   - role: server
     ssh:
-      host: tph99.nicklasfrahm.xyz
-      fingerprint: SHA256:t/bwWCelgcAEYmQW9XbM4p31e1Qq70ZPWOKK+FRxBCc
-      user: nicklasfrahm
+      host: 192.168.56.11
+      user: vagrant
       key-file: ~/.ssh/id_ed25519
     config:
       node-label:
-        - site=tph99
+        - site=vagrant

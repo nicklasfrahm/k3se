@@ -198,12 +198,12 @@ func (e *Engine) Connect() error {
 
 	// Get a list of all nodes and connect to them.
 	for _, node := range e.Spec.Nodes {
-		if err := node.Connect(WithSSHProxy(sshProxy)); err != nil {
-			return err
-		}
-
 		// Inject logger into node.
 		node.Logger = e.Logger.With().Str("host", node.SSH.Host).Logger()
+
+		if err := node.Connect(WithSSHProxy(sshProxy), WithLogger(&node.Logger)); err != nil {
+			return err
+		}
 
 		// Nodes store the connection state so we want to maintain pointers to them.
 		e.Nodes = append(e.Nodes, &node)

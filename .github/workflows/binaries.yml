@@ -9,6 +9,46 @@ on:
   push:
 
 jobs:
+  test:
+    name: Test
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - examples/ssh-proxy.yml
+          - examples/standalone.yml
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Show Vagrant version
+        run: vagrant --version
+
+      - name: Bring up VMs
+        run: make vagrant-up
+
+      - name: Set up Go compiler
+        uses: actions/setup-go@v3
+        with:
+          check-latest: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run k3se up
+        run: go run main.go up ${{ matrix.example }}
+
+      - name: Test k3s
+        working-directory: deploy/vagrant
+        run: |
+          vagrant ssh kube1 -c "k3s version"
+          vagrant ssh kube1 -c "k3s kubectl get nodes"
+          vagrant ssh kube1 -c "k3s kubectl get nodes"
+
+      - name: Run k3se down
+        run: go run main.go down ${{ matrix.example }}
+
   build:
     name: Build
     # pull_request_target: Only "dependabot[bot]" is allowed to access secrets.

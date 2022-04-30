@@ -6,6 +6,7 @@ GOARCH		:= $(shell echo $(PLATFORM) | cut -d "/" -f 2)
 SUFFIX		:= $(GOOS)-$(GOARCH)
 VERSION		?= $(shell git describe --always --tags --dirty)
 BUILD_FLAGS	:= -ldflags="-s -w -X github.com/nicklasfrahm/$(TARGET)/cmd.version=$(VERSION)"
+VAGRANT		:= /usr/bin/vagrant
 
 # Adjust the binary name on Windows.
 ifeq ($(GOOS),windows)
@@ -20,6 +21,14 @@ bin/$(TARGET)-$(SUFFIX): $(SOURCES)
 ifdef UPX
 	upx -qq $(UPX) $@
 endif
+
+.PHONY: vagrant-up
+vagrant-up: $(VAGRANT)
+	cd deploy/vagrant; vagrant up
+
+.PHONY: vagrant-down
+vagrant-down: $(VAGRANT)
+	cd deploy/vagrant; vagrant destroy -f
 
 .PHONY: clean
 clean:

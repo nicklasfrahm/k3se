@@ -1,2 +1,5 @@
 # Ignore compiled binaries.
 bin/
+
+# Ignore Vagrant state.
+.vagrant/

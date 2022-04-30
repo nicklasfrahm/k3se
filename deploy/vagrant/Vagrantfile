@@ -1,0 +1,46 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://vagrantcloud.com/search.
+  config.vm.box = "ubuntu/focal64"
+
+  # Configure SSH public key authentication for SSH.
+  ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_ed25519.pub").first.strip
+  config.vm.provision 'shell', inline: 'mkdir -p /root/.ssh'
+  config.vm.provision 'shell', inline: "echo #{ssh_pub_key} >> /root/.ssh/authorized_keys"
+  config.vm.provision 'shell', inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys", privileged: false
+
+  # Create multiple Vagrant machines.
+  (1..3).each do |i|
+    config.vm.define "kube#{i}" do |node|
+      # Configure the hostname of the machine.
+      node.vm.hostname = "kube#{i}"
+
+      # Create a private network, which allows host-only access to the machine
+      # using a specific IP.
+      node.vm.network "private_network", ip: "192.168.56.1#{i}"
+      node.vm.network "forwarded_port", guest: 22, host: 2221 + i, host_ip: "127.0.0.1", id: "ssh"
+      node.vm.network "forwarded_port", guest: 6443, host: 6442 + i, host_ip: "127.0.0.1", id: "kubeapi"
+
+      # Provider-specific configuration so you can fine-tune various
+      # backing providers for Vagrant. These expose provider-specific options.
+      node.vm.provider "virtualbox" do |vb|
+        vb.name = "kube#{i}"
+
+        # Customize the amount of memory on the VM:
+        vb.memory = "1024"
+        vb.cpus = "1"
+      end
+    end
+  end
+end
