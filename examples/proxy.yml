@@ -7,7 +7,7 @@ version: stable
 # commmand line options of the `k3s` command.
 cluster:
   tls-san:
-    - localhost
+    - 192.168.56.11
   write-kubeconfig-mode: "644"
 
 # A list of all nodes in the cluster and their connection information.

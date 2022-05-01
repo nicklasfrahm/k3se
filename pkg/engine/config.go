@@ -29,10 +29,11 @@ var (
 
 // K3sConfig describes the configuration of a k3s node.
 type K3sConfig struct {
-	WriteKubeconfigMode string   `yaml:"write-kubeconfig-mode"`
-	TLSSAN              []string `yaml:"tls-san"`
+	WriteKubeconfigMode string   `yaml:"write-kubeconfig-mode,omitempty"`
+	TLSSAN              []string `yaml:"tls-san,omitempty"`
+	Disable             []string `yaml:"disable,omitempty"`
+	AdvertiseAddress    string   `yaml:"advertise-address,omitempty"`
 	NodeLabel           []string `yaml:"node-label"`
-	Disable             []string `yaml:"disable"`
 	// TODO: Add missing config options as specified here:
 	// https://rancher.com/docs/k3s/latest/en/installation/install-options/server-config/#k3s-server-cli-help
 }

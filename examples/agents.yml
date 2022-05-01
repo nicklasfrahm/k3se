@@ -20,3 +20,19 @@ nodes:
     config:
       node-label:
         - site=vagrant
+  - role: agent
+    ssh:
+      host: 192.168.56.12
+      user: vagrant
+      key-file: ~/.ssh/id_ed25519
+    config:
+      node-label:
+        - site=vagrant
+  - role: agent
+    ssh:
+      host: 192.168.56.13
+      user: vagrant
+      key-file: ~/.ssh/id_ed25519
+    config:
+      node-label:
+        - site=vagrant

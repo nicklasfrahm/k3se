@@ -2,8 +2,10 @@ package engine
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
@@ -20,7 +22,9 @@ type Engine struct {
 	Logger *zerolog.Logger
 
 	sync.Mutex
-	installer []byte
+	installer    []byte
+	clusterToken string
+	serverURL    string
 
 	Nodes []*Node
 	Spec  *Config
@@ -111,6 +115,19 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	// Create the node configuration.
 	config := e.Spec.Cluster.Merge(&node.Config)
 
+	// Remove configuration keys that are server-specific.
+	// TODO: Evaluate option to have seperate server and agent configuration structs.
+	if node.Role == RoleAgent {
+		config.WriteKubeconfigMode = ""
+		config.TLSSAN = nil
+	}
+
+	if node.Role == RoleServer {
+		// This ensures that agent can connect to the servers in Vagrant. For reference, see:
+		// https://github.com/alexellis/k3sup/issues/306#issuecomment-1059986048
+		config.AdvertiseAddress = node.SSH.Host
+	}
+
 	// TODO: Configure the "advertise address" based on the first SAN and modify the
 	// kubeconfig accordingly.
 
@@ -135,8 +152,6 @@ func (e *Engine) ConfigureNode(node *Node) error {
 		return err
 	}
 
-	// TODO: Upload configuration and move it to appropriate location using "sudo".
-
 	return nil
 }
 
@@ -149,19 +164,53 @@ func (e *Engine) Install() error {
 	}
 
 	if err := firstControlplane.Do(sshx.Cmd{
-		Cmd: "sudo /tmp/k3se/install.sh",
+		Cmd: "/tmp/k3se/install.sh",
 		Env: map[string]string{
-			"INSTALL_K3s_CHANNEL": e.Spec.Version,
+			"INSTALL_K3S_FORCE_RESTART": "true",
+			"INSTALL_K3s_CHANNEL":       e.Spec.Version,
 		},
 		Stdout: firstControlplane,
 	}); err != nil {
 		return err
 	}
 
-	// Force restart as the installer may have changed the configuration.
-	return firstControlplane.Do(sshx.Cmd{
-		Cmd: "sudo systemctl restart k3s",
-	})
+	agents := e.FilterNodes(RoleAgent)
+	if len(agents) > 0 {
+		// Download cluster token.
+		token := new(bytes.Buffer)
+		if err := firstControlplane.Do(sshx.Cmd{
+			Cmd:    "sudo cat /var/lib/rancher/k3s/server/node-token",
+			Stdout: token,
+		}); err != nil {
+			return err
+		}
+		e.clusterToken = strings.TrimSpace(token.String())
+
+		// If TLS SANs are configured, the first one will be used as the server URL.
+		// If not, the host address of the first controlplane will be used.
+		e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
+		if len(e.Spec.Cluster.TLSSAN) > 0 {
+			e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
+		}
+		e.Logger.Info().Str("server_url", e.serverURL).Msgf("Detecting server URL")
+
+		// Configure the agents.
+		wg := sync.WaitGroup{}
+		for _, agent := range agents {
+			wg.Add(1)
+			go func(agent *Node) {
+				defer wg.Done()
+
+				if err := e.installAgent(agent); err != nil {
+					return
+				}
+			}(agent)
+		}
+
+		wg.Wait()
+	}
+
+	return nil
 }
 
 // Uninstall runs the uninstallation script on all nodes.
@@ -197,7 +246,9 @@ func (e *Engine) Connect() error {
 	}
 
 	// Get a list of all nodes and connect to them.
-	for _, node := range e.Spec.Nodes {
+	for i := 0; i < len(e.Spec.Nodes); i++ {
+		node := &e.Spec.Nodes[i]
+
 		// Inject logger into node.
 		node.Logger = e.Logger.With().Str("host", node.SSH.Host).Logger()
 
@@ -206,7 +257,7 @@ func (e *Engine) Connect() error {
 		}
 
 		// Nodes store the connection state so we want to maintain pointers to them.
-		e.Nodes = append(e.Nodes, &node)
+		e.Nodes = append(e.Nodes, node)
 	}
 
 	return nil
@@ -227,6 +278,30 @@ func (e *Engine) Disconnect() error {
 		if err := node.Disconnect(); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// installAgent installs a k3s worker node.
+func (e *Engine) installAgent(node *Node) error {
+	if err := e.ConfigureNode(node); err != nil {
+		node.Logger.Error().Err(err).Msg("Failed to configure node")
+		return err
+	}
+
+	if err := node.Do(sshx.Cmd{
+		Cmd: "/tmp/k3se/install.sh",
+		Env: map[string]string{
+			"INSTALL_K3S_FORCE_RESTART": "true",
+			"INSTALL_K3s_CHANNEL":       e.Spec.Version,
+			"K3S_TOKEN":                 e.clusterToken,
+			"K3S_URL":                   e.serverURL,
+		},
+		Stdout: node,
+	}); err != nil {
+		node.Logger.Error().Err(err).Msg("Failed to run installation script")
+		return err
 	}
 
 	return nil
