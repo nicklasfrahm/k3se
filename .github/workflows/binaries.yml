@@ -9,47 +9,6 @@ on:
   push:
 
 jobs:
-  test:
-    name: Test
-    # TODO: Deploy self-hosted runner on bare-metal with virtualization support.
-    runs-on: macos-10.15
-    strategy:
-      fail-fast: false
-      matrix:
-        example:
-          - examples/ssh-proxy.yml
-          - examples/standalone.yml
-    steps:
-      - name: Check out
-        uses: actions/checkout@v3
-
-      - name: Generate SSH keypair for Vagrant
-        run: ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519 -q -N ""
-
-      - name: Bring up VMs
-        run: make vagrant-up
-
-      - name: Set up Go compiler
-        uses: actions/setup-go@v3
-        with:
-          check-latest: true
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run k3se up
-        run: go run main.go up ${{ matrix.example }}
-
-      - name: Test k3s
-        working-directory: deploy/vagrant
-        run: |
-          vagrant ssh kube1 -c "k3s --version"
-          vagrant ssh kube1 -c "k3s kubectl get nodes"
-          vagrant ssh kube1 -c "k3s kubectl cluster-info"
-
-      - name: Run k3se down
-        run: go run main.go down ${{ matrix.example }}
-
   build:
     name: Build
     # pull_request_target: Only "dependabot[bot]" is allowed to access secrets.
@@ -58,7 +17,6 @@ jobs:
     if: |
       (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]') ||
       (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]')
-    needs: [test]
     strategy:
       fail-fast: false
       matrix:
