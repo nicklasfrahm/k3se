@@ -100,7 +100,10 @@ func (node *Node) Write(raw []byte) (int, error) {
 
 	lines := strings.Split(string(trimmed), "\n")
 	for i := 0; i < len(lines)-1; i++ {
-		node.Logger.Info().Msg(lines[i])
+		line := strings.TrimSpace(lines[i])
+		if line != "" {
+			node.Logger.Info().Msg(line)
+		}
 	}
 
 	return len(raw), nil

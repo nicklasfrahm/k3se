@@ -11,6 +11,9 @@ import (
 	"github.com/nicklasfrahm/k3se/pkg/ops"
 )
 
+var kubeConfigPath string
+var skipInstall bool
+
 var upCmd = &cobra.Command{
 	Use:   "up [config]",
 	Short: "Deploy or upgrade cluster",
@@ -19,7 +22,13 @@ var upCmd = &cobra.Command{
 By default the command expects a "k3se.yaml" config
 file in the current directory. You may override this
 by passing a path to the configuration file as a CLI
-argument.`,
+argument.
+
+This command will also download the kubeconfig and
+merge the new context to the kubeconfig located at
+"~/.kube/config". Alternatively, you may use the
+--kubeconfig flag to specify a custom location for
+the new context to be written to.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger := log.Output(zerolog.ConsoleWriter{
@@ -36,10 +45,24 @@ argument.`,
 			opts = append(opts, ops.WithConfigPath(args[0]))
 		}
 
-		return ops.Up(opts...)
+		// Use manual override for kubeconfig path if provided.
+		if kubeConfigPath != "" {
+			opts = append(opts, ops.WithKubeConfigPath(kubeConfigPath))
+		}
+
+		if !skipInstall {
+			if err := ops.Up(opts...); err != nil {
+				return err
+			}
+		}
+
+		return ops.KubeConfig(opts...)
 	},
 }
 
 func init() {
+	upCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "k", "~/.kube/config", "location to write the kubeconfig")
+	upCmd.Flags().BoolVarP(&skipInstall, "skip-install", "s", false, "only download the kubeconfig")
+
 	rootCmd.AddCommand(upCmd)
 }

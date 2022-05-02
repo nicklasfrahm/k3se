@@ -35,7 +35,7 @@ type K3sConfig struct {
 	AdvertiseAddress    string   `yaml:"advertise-address,omitempty"`
 	NodeLabel           []string `yaml:"node-label"`
 	// TODO: Add missing config options as specified here:
-	// https://rancher.com/docs/k3s/latest/en/installation/install-options/server-config/#k3s-server-cli-help
+	//       https://rancher.com/docs/k3s/latest/en/installation/install-options/server-config/#k3s-server-cli-help
 }
 
 // Merge combines two configurations.

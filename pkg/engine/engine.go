@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -67,12 +70,17 @@ func (e *Engine) Installer() ([]byte, error) {
 
 // FilterNodes returns a list of nodes based on the specified selector.
 // Use RoleAny to match all nodes, RoleAgent to match all worker nodes,
-// and RoleServer to match all control-plane nodes. Note that this will
-// a nil slice if Connect has not been called yet.
+// and RoleServer to match all control-plane nodes.
 func (e *Engine) FilterNodes(selector Role) []*Node {
 	var nodes []*Node
 
-	for _, node := range e.Nodes {
+	// We are NOT using range here because we need pointers to the
+	// actual nodes inside the Spec holding the connection state.
+	// This would not work with range as it does "call-by-value",
+	// meaning that the value of the iterator is a copy of the value.
+	for i := 0; i < len(e.Spec.Nodes); i++ {
+		node := &e.Spec.Nodes[i]
+
 		if node.Role == selector || selector == RoleAny {
 			nodes = append(nodes, node)
 		}
@@ -90,6 +98,15 @@ func (e *Engine) SetSpec(config *Config) error {
 	}
 
 	e.Spec = config
+
+	// If TLS SANs are configured, the first one will be used as the server URL.
+	// If not, the host address of the first controlplane will be used.
+	firstControlplane := e.FilterNodes(RoleServer)[0]
+	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
+	if len(e.Spec.Cluster.TLSSAN) > 0 {
+		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
+	}
+	e.Logger.Info().Str("server_url", e.serverURL).Msgf("Detecting server URL")
 
 	return nil
 }
@@ -128,8 +145,8 @@ func (e *Engine) ConfigureNode(node *Node) error {
 		config.AdvertiseAddress = node.SSH.Host
 	}
 
-	// TODO: Configure the "advertise address" based on the first SAN and modify the
-	// kubeconfig accordingly.
+	// TODO: Configure the "advertise address" based on the first
+	//       SAN and modify the kubeconfig accordingly.
 
 	configBytes, err := yaml.Marshal(config)
 	if err != nil {
@@ -186,14 +203,6 @@ func (e *Engine) Install() error {
 		}
 		e.clusterToken = strings.TrimSpace(token.String())
 
-		// If TLS SANs are configured, the first one will be used as the server URL.
-		// If not, the host address of the first controlplane will be used.
-		e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
-		if len(e.Spec.Cluster.TLSSAN) > 0 {
-			e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
-		}
-		e.Logger.Info().Str("server_url", e.serverURL).Msgf("Detecting server URL")
-
 		// Configure the agents.
 		wg := sync.WaitGroup{}
 		for _, agent := range agents {
@@ -220,8 +229,13 @@ func (e *Engine) Uninstall() error {
 	for _, node := range nodes {
 		// TODO: Check if k3s is installed and if not skip the uninstallation.
 
+		uninstallScript := "k3s-uninstall.sh"
+		if node.Role == RoleAgent {
+			uninstallScript = "k3s-agent-uninstall.sh"
+		}
+
 		if err := node.Do(sshx.Cmd{
-			Cmd:    "k3s-uninstall.sh",
+			Cmd:    uninstallScript,
 			Shell:  true,
 			Stderr: node,
 		}); err != nil {
@@ -234,8 +248,6 @@ func (e *Engine) Uninstall() error {
 
 // Connect establishes an SSH connection to all nodes.
 func (e *Engine) Connect() error {
-	e.Nodes = make([]*Node, 0)
-
 	// Establish connection to proxy if host is specified.
 	var sshProxy *sshx.Client
 	if e.Spec.SSHProxy.Host != "" {
@@ -247,6 +259,8 @@ func (e *Engine) Connect() error {
 
 	// Get a list of all nodes and connect to them.
 	for i := 0; i < len(e.Spec.Nodes); i++ {
+		// We need to create a proper handle here as the nodes in the Spec
+		// will hold the connection state and range only does "call-by-value".
 		node := &e.Spec.Nodes[i]
 
 		// Inject logger into node.
@@ -255,9 +269,6 @@ func (e *Engine) Connect() error {
 		if err := node.Connect(WithSSHProxy(sshProxy), WithLogger(&node.Logger)); err != nil {
 			return err
 		}
-
-		// Nodes store the connection state so we want to maintain pointers to them.
-		e.Nodes = append(e.Nodes, node)
 	}
 
 	return nil
@@ -303,6 +314,61 @@ func (e *Engine) installAgent(node *Node) error {
 		node.Logger.Error().Err(err).Msg("Failed to run installation script")
 		return err
 	}
+
+	return nil
+}
+
+// KubeConfig writes the kubeconfig of the cluster to the specified location.
+func (e *Engine) KubeConfig(outputPath string) error {
+	firstControlPlane := e.FilterNodes(RoleServer)[0]
+
+	// Download kubeconfig.
+	newConfig := new(bytes.Buffer)
+	if err := firstControlPlane.Do(sshx.Cmd{
+		Cmd:    "sudo cat /etc/rancher/k3s/k3s.yaml",
+		Stdout: newConfig,
+	}); err != nil {
+		return err
+	}
+
+	// Adjust API server URL host.
+	serverURL, err := url.Parse(e.serverURL)
+	if err != nil {
+		return err
+	}
+	hostname := serverURL.Hostname()
+	hostnameReplacer := strings.NewReplacer("127.0.0.1", hostname, "localhost", hostname)
+	newConfigBytes := []byte(hostnameReplacer.Replace(newConfig.String()))
+
+	// Resolve the home directoy in the output path.
+	if outputPath[0] == '~' {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		outputPath = filepath.Join(home, outputPath[1:])
+	}
+
+	// Create the output directory. This will be a no-op if it already exists.
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0700); err != nil {
+		return err
+	}
+
+	// Read existing local config.
+	oldConfig, err := ioutil.ReadFile(outputPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+
+		// If the file does not exist, we can just write the new config.
+		if err := ioutil.WriteFile(outputPath, newConfigBytes, 0600); err != nil {
+			return err
+		}
+	}
+
+	// TODO: Merge configs.
+	_ = oldConfig
 
 	return nil
 }
