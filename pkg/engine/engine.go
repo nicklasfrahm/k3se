@@ -29,8 +29,7 @@ type Engine struct {
 	clusterToken string
 	serverURL    string
 
-	Nodes []*Node
-	Spec  *Config
+	Spec *Config
 }
 
 // New creates a new Engine.
@@ -340,7 +339,7 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	hostnameReplacer := strings.NewReplacer("127.0.0.1", hostname, "localhost", hostname)
 	newConfigBytes := []byte(hostnameReplacer.Replace(newConfig.String()))
 
-	// Resolve the home directoy in the output path.
+	// Resolve the home directory in the output path.
 	if outputPath[0] == '~' {
 		home, err := os.UserHomeDir()
 		if err != nil {
