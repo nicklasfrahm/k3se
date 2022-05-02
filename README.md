@@ -24,6 +24,16 @@ The nodes have to be accessible via SSH, either directly or via a bastion host. 
 $ echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$(whoami)
 ```
 
+## Limitations 🚨
+
+The following features are currently not supported, but are planned for future releases:
+
+- **High availability**  
+  Currently the installation will fail if more than a single node with the role `server` is specified.
+
+- **Downsizing**  
+  If nodes are removed from the cluster configuration, they are not decommissioned. We plan to enable this feature in the future using the `git` history of the cluster configuration.
+
 ## License 📄
 
 This project is and will always be licensed under the terms of the [MIT license][file-license].
