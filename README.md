@@ -1,5 +1,7 @@
 # k3se 🧀
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/nicklasfrahm/k3se)](https://goreportcard.com/report/github.com/nicklasfrahm/k3se)
+
 A lightweight Kubernetes engine that deploys `k3s` clusters declaratively based on a cluster configuration file. The name is an abbreviation for _k3s engine_ and a hommage to the German word for cheese, _Käse [ˈkɛːzə]_.
 
 ## Quickstart 💡

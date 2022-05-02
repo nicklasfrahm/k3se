@@ -133,7 +133,7 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	config := e.Spec.Cluster.Merge(&node.Config)
 
 	// Remove configuration keys that are server-specific.
-	// TODO: Evaluate option to have seperate server and agent configuration structs.
+	// TODO: Evaluate option to have separate server and agent configuration structs.
 	if node.Role == RoleAgent {
 		config.WriteKubeconfigMode = ""
 		config.TLSSAN = nil
