@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -340,7 +341,30 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	// To my knowledge k3s always names its cluster, auth info and context "default".
 	newConfig.Clusters["default"].Server = e.serverURL
 
-	// TODO: Rename cluster, context and auth info for humans if env["CI"] is unset.
+	// Rename cluster, context and auth info for humans. If k3se is running as part of a
+	// CI pipeline we will not adjust the names to allow for further processing downstream.
+	if os.Getenv("CI") == "" {
+		// Fetch hostname from kubeconfig.
+		serverURL, err := url.Parse(e.serverURL)
+		if err != nil {
+			return err
+		}
+
+		// Use the FQDN of the API server as the cluster name.
+		cluster := serverURL.Hostname()
+		context := "admin@" + cluster
+
+		newConfig.Clusters[cluster] = newConfig.Clusters["default"]
+		delete(newConfig.Clusters, "default")
+		newConfig.AuthInfos[context] = newConfig.AuthInfos["default"]
+		delete(newConfig.AuthInfos, "default")
+		newConfig.Contexts[context] = newConfig.Contexts["default"]
+		delete(newConfig.Contexts, "default")
+		newConfig.Contexts[context].Cluster = cluster
+		newConfig.Contexts[context].AuthInfo = context
+
+		newConfig.CurrentContext = context
+	}
 
 	// Resolve the home directory in the output path.
 	if outputPath[0] == '~' {
