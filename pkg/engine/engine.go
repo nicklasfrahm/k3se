@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
-	"github.com/nicklasfrahm/k3se/pkg/sshx"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
+	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/nicklasfrahm/k3se/pkg/sshx"
 )
 
 const (
@@ -322,22 +323,24 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	firstControlPlane := e.FilterNodes(RoleServer)[0]
 
 	// Download kubeconfig.
-	newConfig := new(bytes.Buffer)
+	newConfigBuffer := new(bytes.Buffer)
 	if err := firstControlPlane.Do(sshx.Cmd{
 		Cmd:    "sudo cat /etc/rancher/k3s/k3s.yaml",
-		Stdout: newConfig,
+		Stdout: newConfigBuffer,
 	}); err != nil {
 		return err
 	}
 
-	// Adjust API server URL host.
-	serverURL, err := url.Parse(e.serverURL)
+	// Fix API server URL.
+	newConfig, err := clientcmd.Load(newConfigBuffer.Bytes())
 	if err != nil {
+		e.Logger.Error().Err(err).Msg("Failed to parse kubeconfig")
 		return err
 	}
-	hostname := serverURL.Hostname()
-	hostnameReplacer := strings.NewReplacer("127.0.0.1", hostname, "localhost", hostname)
-	newConfigBytes := []byte(hostnameReplacer.Replace(newConfig.String()))
+	// To my knowledge k3s always names its cluster, auth info and context "default".
+	newConfig.Clusters["default"].Server = e.serverURL
+
+	// TODO: Rename cluster, context and auth info for humans if env["CI"] is unset.
 
 	// Resolve the home directory in the output path.
 	if outputPath[0] == '~' {
@@ -348,26 +351,36 @@ func (e *Engine) KubeConfig(outputPath string) error {
 		outputPath = filepath.Join(home, outputPath[1:])
 	}
 
-	// Create the output directory. This will be a no-op if it already exists.
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0700); err != nil {
-		return err
-	}
-
 	// Read existing local config.
-	oldConfig, err := ioutil.ReadFile(outputPath)
+	oldConfigBytes, err := ioutil.ReadFile(outputPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
 
 		// If the file does not exist, we can just write the new config.
-		if err := ioutil.WriteFile(outputPath, newConfigBytes, 0600); err != nil {
+		if err := clientcmd.WriteToFile(*newConfig, outputPath); err != nil {
 			return err
 		}
+		return nil
 	}
 
-	// TODO: Merge configs.
-	_ = oldConfig
+	// Parse existing local config.
+	oldConfig, err := clientcmd.Load(oldConfigBytes)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	// Merge the new config with the existing one.
+	for name, cluster := range newConfig.Clusters {
+		oldConfig.Clusters[name] = cluster
+	}
+	for name, authInfo := range newConfig.AuthInfos {
+		oldConfig.AuthInfos[name] = authInfo
+	}
+	for name, context := range newConfig.Contexts {
+		oldConfig.Contexts[name] = context
+	}
+
+	return clientcmd.WriteToFile(*oldConfig, outputPath)
 }
