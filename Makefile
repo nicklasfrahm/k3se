@@ -29,6 +29,17 @@ vagrant-up:
 vagrant-down:
 	cd deploy/vagrant; vagrant destroy -f
 
+/usr/local/bin/$(TARGET): bin/$(TARGET)-$(SUFFIX)
+	@sudo cp $^ $@
+	@sudo chmod 755 $@
+
+.PHONY: install
+install: /usr/local/bin/$(TARGET)
+
+.PHONY: uninstall
+uninstall:
+	@sudo rm -f /usr/local/bin/$(TARGET)
+
 .PHONY: clean
 clean:
 	@rm -rvf bin
