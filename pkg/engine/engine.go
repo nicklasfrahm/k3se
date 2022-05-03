@@ -185,6 +185,7 @@ func (e *Engine) Install() error {
 		Cmd: "/tmp/k3se/install.sh",
 		Env: map[string]string{
 			"INSTALL_K3S_FORCE_RESTART": "true",
+			"INSTALL_K3S_EXEC":          "server",
 			"INSTALL_K3s_CHANNEL":       e.Spec.Version,
 		},
 		Stdout: firstControlplane,
@@ -306,6 +307,7 @@ func (e *Engine) installAgent(node *Node) error {
 		Cmd: "/tmp/k3se/install.sh",
 		Env: map[string]string{
 			"INSTALL_K3S_FORCE_RESTART": "true",
+			"INSTALL_K3S_EXEC":          "agent",
 			"INSTALL_K3s_CHANNEL":       e.Spec.Version,
 			"K3S_TOKEN":                 e.clusterToken,
 			"K3S_URL":                   e.serverURL,
