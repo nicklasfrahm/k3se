@@ -39,6 +39,40 @@ The following features are currently not supported, but are planned for future r
 - **Diffing**  
   Using the `git` history of the cluster configuration to display potential actions that can be taken to bring the cluster up to date with the configuration.
 
+## GitHub Actions 🤖
+
+You can use GitHub Actions to run `k3se` inside your CI pipeline. Simply add the following workflow:
+
+```yaml
+name: Deploy
+
+on:
+  - push
+
+jobs:
+  kubernetes:
+    name: Kubernetes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy k3s cluster
+        uses: nicklasfrahm/k3se@v0
+        with:
+          config: "examples/standalone.yml"
+```
+
+### Input variables
+
+See [action.yml](./action.yml) for more detailed information. **Please note that all input variables must have string values. It is thus recommend to always use quotes.**
+
+| Input variable | Default value | Description                                                                                 |
+| -------------- | ------------- | ------------------------------------------------------------------------------------------- |
+| `command`      | `up`          | Subcommand to be executed.                                                                  |
+| `config`       | `k3se.yml`    | Path to the cluster configuration. May be set to `""` if the command does not use a config. |
+| `version`      | `latest`      | Version of `k3se` to use.                                                                   |
+
 ## License 📄
 
 This project is and will always be licensed under the terms of the [MIT license][file-license].

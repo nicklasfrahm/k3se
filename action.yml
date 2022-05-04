@@ -1,0 +1,25 @@
+name: "k3se for GitHub Actions"
+description: "A lightweight Kubernetes engine that deploys k3s clusters declaratively based on a cluster configuration file."
+branding:
+  color: gray-dark
+  icon: server
+inputs:
+  command:
+    description: "Command to execute"
+    required: true
+    default: "up"
+  config:
+    description: "Path to the cluster configuration file"
+    required: false
+    default: "k3se.yml"
+  version:
+    description: "Version of k3s to use"
+    required: true
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        docker run -t -v ${GITHUB_WORKSPACE}:/workspace -w /workspace ghcr.io/nicklasfrahm/k3se:${{ inputs.version }} ${{ inputs.command }} ${{ inputs.config }}
+      shell: bash
