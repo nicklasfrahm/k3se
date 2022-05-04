@@ -40,6 +40,13 @@ install: /usr/local/bin/$(TARGET)
 uninstall:
 	@sudo rm -f /usr/local/bin/$(TARGET)
 
+.PHONY: docker
+docker:
+	docker build \
+	  -t k3se:latest \
+	  -t k3se:$(VERSION) \
+	  -f build/package/Dockerfile .
+
 .PHONY: clean
 clean:
 	@rm -rvf bin
