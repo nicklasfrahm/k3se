@@ -47,7 +47,9 @@ You can use GitHub Actions to run `k3se` inside your CI pipeline. Simply add the
 name: Deploy
 
 on:
-  - push
+  push:
+    branches:
+      - main
 
 jobs:
   kubernetes:
