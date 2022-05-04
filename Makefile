@@ -45,6 +45,7 @@ docker:
 	docker build \
 	  -t k3se:latest \
 	  -t k3se:$(VERSION) \
+	  --build-arg VERSION=$(VERSION) \
 	  -f build/package/Dockerfile .
 
 .PHONY: clean

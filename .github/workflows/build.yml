@@ -132,6 +132,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           push: ${{ github.ref_protected }}
+          build-args: |
+            VERSION=v${{ steps.semantic.outputs.release-version }}
 
   auto-merge:
     name: Auto-merge
