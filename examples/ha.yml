@@ -11,8 +11,11 @@ cluster:
   tls-san:
     - 192.168.56.11
   write-kubeconfig-mode: "644"
+  # IMPORTANT: Setting this options is required if your
+  # HA cluster nodes have multiple network interfaces.
+  flannel-iface: "enp0s3"
   node-label:
-    - example=agents
+    - example=ha
 
 # A list of all nodes in the cluster and their connection information.
 nodes:
@@ -23,22 +26,34 @@ nodes:
       key-file: ~/.ssh/id_ed25519
     config:
       node-label:
-        - hostname=kube1
+        - mylabel=a
+      # IMPORTANT: Setting this options is required if your
+      # HA cluster nodes have multiple network interfaces.
+      node-ip: 192.168.56.11
+      node-external-ip: 192.168.56.11
 
-  - role: agent
+  - role: server
     ssh:
       host: 192.168.56.12
       user: vagrant
       key-file: ~/.ssh/id_ed25519
     config:
       node-label:
-        - hostname=kube2
+        - mylabel=b
+      # IMPORTANT: Setting this options is required if your
+      # HA cluster nodes have multiple network interfaces.
+      node-ip: 192.168.56.12
+      node-external-ip: 192.168.56.12
 
-  - role: agent
+  - role: server
     ssh:
       host: 192.168.56.13
       user: vagrant
       key-file: ~/.ssh/id_ed25519
     config:
       node-label:
-        - hostname=kube3
+        - mylabel=c
+      # IMPORTANT: Setting this options is required if your
+      # HA cluster nodes have multiple network interfaces.
+      node-ip: 192.168.56.13
+      node-external-ip: 192.168.56.13

@@ -46,29 +46,6 @@ func New(options ...Option) (*Engine, error) {
 	}, nil
 }
 
-// Installer returns the downloaded the k3s installer.
-func (e *Engine) Installer() ([]byte, error) {
-	// Lock engine to prevent concurrent access to installer cache.
-	e.Lock()
-
-	if len(e.installer) == 0 {
-		resp, err := http.Get(InstallerURL)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		e.installer, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	e.Unlock()
-
-	return e.installer, nil
-}
-
 // FilterNodes returns a list of nodes based on the specified selector.
 // Use RoleAny to match all nodes, RoleAgent to match all worker nodes,
 // and RoleServer to match all control-plane nodes.
@@ -115,8 +92,7 @@ func (e *Engine) SetSpec(config *Config) error {
 // ConfigureNode uploads the installer and the configuration
 // to a node prior to running the installation script.
 func (e *Engine) ConfigureNode(node *Node) error {
-	// Upload the installer.
-	installer, err := e.Installer()
+	installer, err := e.fetchInstallationScript()
 	if err != nil {
 		return err
 	}
@@ -124,11 +100,15 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	if err := node.Upload("/tmp/k3se/install.sh", bytes.NewReader(installer)); err != nil {
 		return err
 	}
+
 	if err := node.Do(sshx.Cmd{
 		Cmd: "chmod +x /tmp/k3se/install.sh",
 	}); err != nil {
 		return err
 	}
+
+	// TODO: Make the engine smarter by checking if the node has multiple interfaces
+	//       and configuring the "node-ip" if HA is enabled.
 
 	// Create the node configuration.
 	config := e.Spec.Cluster.Merge(&node.Config)
@@ -141,13 +121,10 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	}
 
 	if node.Role == RoleServer {
-		// This ensures that agent can connect to the servers in Vagrant. For reference, see:
+		// This ensures that agents can connect to the servers in Vagrant. For reference, see:
 		// https://github.com/alexellis/k3sup/issues/306#issuecomment-1059986048
 		config.AdvertiseAddress = node.SSH.Host
 	}
-
-	// TODO: Configure the "advertise address" based on the first
-	//       SAN and modify the kubeconfig accordingly.
 
 	configBytes, err := yaml.Marshal(config)
 	if err != nil {
@@ -175,53 +152,11 @@ func (e *Engine) ConfigureNode(node *Node) error {
 
 // Install runs the installation script on the node.
 func (e *Engine) Install() error {
-	firstControlplane := e.FilterNodes(RoleServer)[0]
-
-	if err := e.ConfigureNode(firstControlplane); err != nil {
+	if err := e.installControlPlanes(); err != nil {
 		return err
 	}
 
-	if err := firstControlplane.Do(sshx.Cmd{
-		Cmd: "/tmp/k3se/install.sh",
-		Env: map[string]string{
-			"INSTALL_K3S_FORCE_RESTART": "true",
-			"INSTALL_K3S_EXEC":          "server",
-			"INSTALL_K3s_CHANNEL":       e.Spec.Version,
-		},
-		Stdout: firstControlplane,
-	}); err != nil {
-		return err
-	}
-
-	agents := e.FilterNodes(RoleAgent)
-	if len(agents) > 0 {
-		// Download cluster token.
-		token := new(bytes.Buffer)
-		if err := firstControlplane.Do(sshx.Cmd{
-			Cmd:    "sudo cat /var/lib/rancher/k3s/server/node-token",
-			Stdout: token,
-		}); err != nil {
-			return err
-		}
-		e.clusterToken = strings.TrimSpace(token.String())
-
-		// Configure the agents.
-		wg := sync.WaitGroup{}
-		for _, agent := range agents {
-			wg.Add(1)
-			go func(agent *Node) {
-				defer wg.Done()
-
-				if err := e.installAgent(agent); err != nil {
-					return
-				}
-			}(agent)
-		}
-
-		wg.Wait()
-	}
-
-	return nil
+	return e.installWorkers()
 }
 
 // Uninstall runs the uninstallation script on all nodes.
@@ -291,31 +226,6 @@ func (e *Engine) Disconnect() error {
 		if err := node.Disconnect(); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-// installAgent installs a k3s worker node.
-func (e *Engine) installAgent(node *Node) error {
-	if err := e.ConfigureNode(node); err != nil {
-		node.Logger.Error().Err(err).Msg("Failed to configure node")
-		return err
-	}
-
-	if err := node.Do(sshx.Cmd{
-		Cmd: "/tmp/k3se/install.sh",
-		Env: map[string]string{
-			"INSTALL_K3S_FORCE_RESTART": "true",
-			"INSTALL_K3S_EXEC":          "agent",
-			"INSTALL_K3s_CHANNEL":       e.Spec.Version,
-			"K3S_TOKEN":                 e.clusterToken,
-			"K3S_URL":                   e.serverURL,
-		},
-		Stdout: node,
-	}); err != nil {
-		node.Logger.Error().Err(err).Msg("Failed to run installation script")
-		return err
 	}
 
 	return nil
@@ -409,4 +319,129 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	}
 
 	return clientcmd.WriteToFile(*oldConfig, outputPath)
+}
+
+// fetchInstallationScript returns the downloaded the k3s installer.
+func (e *Engine) fetchInstallationScript() ([]byte, error) {
+	// Lock engine to prevent concurrent access to installer cache.
+	e.Lock()
+
+	if len(e.installer) == 0 {
+		resp, err := http.Get(InstallerURL)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		e.installer, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	e.Unlock()
+
+	return e.installer, nil
+}
+
+// fetchClusterToken downloads the node token used to build a cluster.
+func (e *Engine) fetchClusterToken(server *Node) error {
+	tokenBuffer := new(bytes.Buffer)
+	if err := server.Do(sshx.Cmd{
+		Cmd:    "sudo cat /var/lib/rancher/k3s/server/token",
+		Stdout: tokenBuffer,
+	}); err != nil {
+		return err
+	}
+
+	e.clusterToken = strings.TrimSpace(tokenBuffer.String())
+
+	return nil
+}
+
+// installControlPlanes installs the k3s servers.
+func (e *Engine) installControlPlanes() error {
+	// These installation options are universal to HA and non-HA clusters.
+	env := map[string]string{
+		"INSTALL_K3S_FORCE_RESTART": "true",
+		"INSTALL_K3S_EXEC":          "server",
+		"INSTALL_K3s_CHANNEL":       e.Spec.Version,
+	}
+
+	servers := e.FilterNodes(RoleServer)
+
+	// Enable HA mode if we have more than a single control-plane.
+	if len(servers) > 1 {
+		env["INSTALL_K3S_EXEC"] = "server --cluster-init"
+	}
+
+	for i := 0; i < len(servers); i++ {
+		server := servers[i]
+
+		if err := e.ConfigureNode(server); err != nil {
+			return err
+		}
+
+		if i > 0 {
+			env["K3S_URL"] = e.serverURL
+			env["K3S_TOKEN"] = e.clusterToken
+		}
+
+		if err := server.Do(sshx.Cmd{
+			Cmd:    "/tmp/k3se/install.sh",
+			Env:    env,
+			Stdout: server,
+		}); err != nil {
+			return err
+		}
+
+		if err := e.fetchClusterToken(server); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// installWorkers installs the k3s worker nodes.
+// This function is a no-op if there are no workers.
+func (e *Engine) installWorkers() error {
+	agents := e.FilterNodes(RoleAgent)
+
+	if len(agents) > 0 {
+		wg := sync.WaitGroup{}
+
+		for _, agent := range agents {
+			wg.Add(1)
+
+			go func(agent *Node) {
+				defer wg.Done()
+
+				if err := e.ConfigureNode(agent); err != nil {
+					agent.Logger.Error().Err(err).Msg("Failed to configure node")
+					return
+				}
+
+				if err := agent.Do(sshx.Cmd{
+					Cmd: "/tmp/k3se/install.sh",
+					Env: map[string]string{
+						"INSTALL_K3S_FORCE_RESTART": "true",
+						"INSTALL_K3S_EXEC":          "agent",
+						"INSTALL_K3s_CHANNEL":       e.Spec.Version,
+						"K3S_TOKEN":                 e.clusterToken,
+						"K3S_URL":                   e.serverURL,
+					},
+					Stdout: agent,
+				}); err != nil {
+					agent.Logger.Error().Err(err).Msg("Failed to run installation script")
+					return
+				}
+
+			}(agent)
+		}
+
+		wg.Wait()
+	}
+
+	return nil
 }

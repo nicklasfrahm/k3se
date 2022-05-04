@@ -33,7 +33,10 @@ type K3sConfig struct {
 	TLSSAN              []string `yaml:"tls-san,omitempty"`
 	Disable             []string `yaml:"disable,omitempty"`
 	AdvertiseAddress    string   `yaml:"advertise-address,omitempty"`
-	NodeLabel           []string `yaml:"node-label"`
+	FlannelIface        string   `yaml:"flannel-iface,omitempty"`
+	NodeIP              string   `yaml:"node-ip,omitempty"`
+	NodeExternalIP      string   `yaml:"node-external-ip,omitempty"`
+	NodeLabel           []string `yaml:"node-label,omitempty"`
 	// TODO: Add missing config options as specified here:
 	//       https://rancher.com/docs/k3s/latest/en/installation/install-options/server-config/#k3s-server-cli-help
 }
@@ -118,10 +121,8 @@ func (c *Config) Verify() error {
 		return errors.New("no control-plane nodes specified")
 	}
 
-	if controlPlanes > 1 {
-		return errors.New("unimplemented: multiple control-plane nodes")
-
-		// TODO: Check that backend is not SQLite if HA is enabled.
+	if controlPlanes%2 == 0 {
+		return errors.New("number of control-plane nodes must be odd")
 	}
 
 	return nil
