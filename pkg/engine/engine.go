@@ -27,9 +27,10 @@ type Engine struct {
 	Logger *zerolog.Logger
 
 	sync.Mutex
-	installer    []byte
-	clusterToken string
-	serverURL    string
+	installer      []byte
+	clusterToken   string
+	serverURL      string
+	cleanupPending bool
 
 	Spec *Config
 }
@@ -77,21 +78,16 @@ func (e *Engine) SetSpec(config *Config) error {
 
 	e.Spec = config
 
-	// If TLS SANs are configured, the first one will be used as the server URL.
-	// If not, the host address of the first controlplane will be used.
-	firstControlplane := e.FilterNodes(RoleServer)[0]
-	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
-	if len(e.Spec.Cluster.TLSSAN) > 0 {
-		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
-	}
-	e.Logger.Info().Str("server_url", e.serverURL).Msgf("Detecting server URL")
-
 	return nil
 }
 
 // ConfigureNode uploads the installer and the configuration
 // to a node prior to running the installation script.
 func (e *Engine) ConfigureNode(node *Node) error {
+	e.cleanupPending = true
+
+	node.Logger.Info().Msg("Configuring node")
+
 	installer, err := e.fetchInstallationScript()
 	if err != nil {
 		return err
@@ -152,6 +148,10 @@ func (e *Engine) ConfigureNode(node *Node) error {
 
 // Install runs the installation script on the node.
 func (e *Engine) Install() error {
+	if err := e.configureServerURL(); err != nil {
+		return err
+	}
+
 	if err := e.installControlPlanes(); err != nil {
 		return err
 	}
@@ -171,6 +171,7 @@ func (e *Engine) Uninstall() error {
 			uninstallScript = "k3s-agent-uninstall.sh"
 		}
 
+		node.Logger.Info().Msg("Running uninstallation script")
 		if err := node.Do(sshx.Cmd{
 			Cmd:    uninstallScript,
 			Shell:  true,
@@ -217,10 +218,13 @@ func (e *Engine) Disconnect() error {
 
 	for _, node := range nodes {
 		// Clean up temporary files before disconnecting.
-		if err := node.Do(sshx.Cmd{
-			Cmd: "rm -rf /tmp/k3se",
-		}); err != nil {
-			return err
+		if e.cleanupPending {
+			node.Logger.Info().Msg("Cleaning up temporary files")
+			if err := node.Do(sshx.Cmd{
+				Cmd: "rm -rf /tmp/k3se",
+			}); err != nil {
+				return err
+			}
 		}
 
 		if err := node.Disconnect(); err != nil {
@@ -233,11 +237,12 @@ func (e *Engine) Disconnect() error {
 
 // KubeConfig writes the kubeconfig of the cluster to the specified location.
 func (e *Engine) KubeConfig(outputPath string) error {
-	firstControlPlane := e.FilterNodes(RoleServer)[0]
+	server := e.FilterNodes(RoleServer)[0]
 
 	// Download kubeconfig.
 	newConfigBuffer := new(bytes.Buffer)
-	if err := firstControlPlane.Do(sshx.Cmd{
+	server.Logger.Info().Msg("Downloading kubeconfig")
+	if err := server.Do(sshx.Cmd{
 		Cmd:    "sudo cat /etc/rancher/k3s/k3s.yaml",
 		Stdout: newConfigBuffer,
 	}); err != nil {
@@ -321,6 +326,20 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	return clientcmd.WriteToFile(*oldConfig, outputPath)
 }
 
+// configureServerURL assembles the server URL based on the given spec.
+func (e *Engine) configureServerURL() error {
+	// If TLS SANs are configured, the first one will be used as the server URL.
+	// If not, the host address of the first controlplane will be used.
+	firstControlplane := e.FilterNodes(RoleServer)[0]
+	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
+	if len(e.Spec.Cluster.TLSSAN) > 0 {
+		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
+	}
+	e.Logger.Info().Str("server_url", e.serverURL).Msg("Configuring server URL")
+
+	return nil
+}
+
 // fetchInstallationScript returns the downloaded the k3s installer.
 func (e *Engine) fetchInstallationScript() ([]byte, error) {
 	// Lock engine to prevent concurrent access to installer cache.
@@ -387,6 +406,7 @@ func (e *Engine) installControlPlanes() error {
 			env["K3S_TOKEN"] = e.clusterToken
 		}
 
+		server.Logger.Info().Msg("Running installation script")
 		if err := server.Do(sshx.Cmd{
 			Cmd:    "/tmp/k3se/install.sh",
 			Env:    env,
@@ -422,6 +442,7 @@ func (e *Engine) installWorkers() error {
 					return
 				}
 
+				agent.Logger.Info().Msg("Running installation script")
 				if err := agent.Do(sshx.Cmd{
 					Cmd: "/tmp/k3se/install.sh",
 					Env: map[string]string{

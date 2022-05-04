@@ -102,7 +102,7 @@ func (node *Node) Write(raw []byte) (int, error) {
 	for i := 0; i < len(lines)-1; i++ {
 		line := strings.TrimSpace(lines[i])
 		if line != "" {
-			node.Logger.Info().Msg(line)
+			node.Logger.Debug().Msg(line)
 		}
 	}
 
