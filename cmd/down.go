@@ -18,7 +18,7 @@ var downCmd = &cobra.Command{
 from the node. Use with caution as this will destroy
 all data stored in your cluster and cannot be undone.
 
-By default the command expects a "k3se.yaml" config
+By default the command expects a "k3se.yml" config
 file in the current directory. You may override this
 by passing a path to the configuration file as a CLI
 argument.`,
