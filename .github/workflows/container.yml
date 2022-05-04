@@ -1,0 +1,52 @@
+name: Container
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  CONTAINER_REGISTRY: ghcr.io
+  CONTAINER_IMAGE: ghcr.io/${{ github.repository }}
+  PLATFORMS: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Generate container metadata
+        id: meta
+        uses: crazy-max/ghaction-docker-meta@v3
+        with:
+          images: ${{ env.CONTAINER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v2
+        with:
+          file: build/package/service.dockerfile
+          cache-from: type=registry,ref=${{ env.CONTAINER_IMAGE }}:main
+          cache-to: type=inline
+          platforms: ${{ env.PLATFORMS }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
