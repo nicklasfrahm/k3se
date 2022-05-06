@@ -123,7 +123,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push container image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           file: build/package/Dockerfile
           cache-from: type=registry,ref=${{ env.CONTAINER_IMAGE }}:main
