@@ -11,7 +11,7 @@ on:
 env:
   CONTAINER_REGISTRY: ghcr.io
   CONTAINER_IMAGE: ghcr.io/${{ github.repository }}
-  PLATFORMS: linux/amd64,linux/arm64,linux/arm
+  PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   binaries:
