@@ -106,7 +106,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=v${{ steps.semantic.outputs.release-version }}
+            type=raw,value=v${{ steps.semantic.outputs.release-version }},enable={{ steps.semantic.outputs.new-release-published }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
