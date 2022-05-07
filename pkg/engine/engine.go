@@ -78,6 +78,14 @@ func (e *Engine) SetSpec(config *Config) error {
 
 	e.Spec = config
 
+	// If TLS SANs are configured, the first one will be used as the server URL.
+	// If not, the host address of the first controlplane will be used.
+	firstControlplane := e.FilterNodes(RoleServer)[0]
+	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
+	if len(e.Spec.Cluster.TLSSAN) > 0 {
+		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
+	}
+
 	return nil
 }
 
@@ -148,9 +156,7 @@ func (e *Engine) ConfigureNode(node *Node) error {
 
 // Install runs the installation script on the node.
 func (e *Engine) Install() error {
-	if err := e.configureServerURL(); err != nil {
-		return err
-	}
+	e.Logger.Info().Str("server_url", e.serverURL).Msg("Detecting server URL")
 
 	if err := e.installControlPlanes(); err != nil {
 		return err
@@ -324,20 +330,6 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	}
 
 	return clientcmd.WriteToFile(*oldConfig, outputPath)
-}
-
-// configureServerURL assembles the server URL based on the given spec.
-func (e *Engine) configureServerURL() error {
-	// If TLS SANs are configured, the first one will be used as the server URL.
-	// If not, the host address of the first controlplane will be used.
-	firstControlplane := e.FilterNodes(RoleServer)[0]
-	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
-	if len(e.Spec.Cluster.TLSSAN) > 0 {
-		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
-	}
-	e.Logger.Info().Str("server_url", e.serverURL).Msg("Configuring server URL")
-
-	return nil
 }
 
 // fetchInstallationScript returns the downloaded the k3s installer.
