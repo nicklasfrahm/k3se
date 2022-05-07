@@ -7,19 +7,24 @@ inputs:
   command:
     description: "Command to execute"
     required: true
-    default: "up"
-  config:
-    description: "Path to the cluster configuration file"
-    required: false
-    default: "k3se.yml"
+    default: up
   version:
     description: "Version of k3s to use"
     required: true
-    default: "latest"
+    default: latest
 
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - run: |
-        docker run -t -v ${GITHUB_WORKSPACE}:/workspace -w /workspace ghcr.io/nicklasfrahm/k3se:${{ inputs.version }} ${{ inputs.command }} ${{ inputs.config }}
+    - name: Download binary
       shell: bash
+      run: |
+        if ! [ -x "$(command -v k3se)" ]; then
+          mkdir -p ~/.local/bin
+          docker create --name k3se ghcr.io/nicklasfrahm/k3se:${{ inputs.version }}
+          docker cp k3se:/k3se ~/.local/bin
+          docker rm k3se
+        fi
+    - name: Run k3se
+      shell: bash
+      run: k3se ${{ inputs.command }}
