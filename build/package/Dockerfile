@@ -1,6 +1,7 @@
-FROM golang AS build
+FROM golang:alpine AS build
 
 WORKDIR /app
+RUN apk add --no-cache make
 
 # Install dependencies.
 COPY go.* ./
@@ -12,6 +13,6 @@ ARG VERSION
 RUN VERSION=${VERSION} make -B && mv bin/* /app/bin/k3se
 
 # Create minimal container image.
-FROM gcr.io/distroless/base:nonroot AS run
+FROM alpine AS run
 COPY --from=build /app/bin/k3se /k3se
-ENTRYPOINT [ "/k3se" ]
+CMD [ "/k3se" ]
