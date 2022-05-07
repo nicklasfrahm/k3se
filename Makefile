@@ -16,7 +16,7 @@ build: bin/$(TARGET)-$(SUFFIX)
 
 bin/$(TARGET)-$(SUFFIX): $(SOURCES)
 	@mkdir -p $(@D)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(BUILD_FLAGS) -o $@ main.go
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(BUILD_FLAGS) -o $@ main.go
 ifdef UPX
 	upx -qq $(UPX) $@
 endif
