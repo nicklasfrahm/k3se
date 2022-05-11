@@ -69,11 +69,10 @@ jobs:
 
 See [action.yml](./action.yml) for more detailed information. **Please note that all input variables must have string values. It is thus recommend to always use quotes.**
 
-| Input variable | Default value | Description                                                                                 |
-| -------------- | ------------- | ------------------------------------------------------------------------------------------- |
-| `command`      | `up`          | Subcommand to be executed.                                                                  |
-| `config`       | `k3se.yml`    | Path to the cluster configuration. May be set to `""` if the command does not use a config. |
-| `version`      | `latest`      | Version of `k3se` to use.                                                                   |
+| Input variable | Default value | Description                                                                                                    |
+| -------------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
+| `command`      | `up`          | Subcommand to be executed. Use `up path/to/my/config.yaml` to specify a custom location for your cluster spec. |
+| `version`      | `latest`      | Version of `k3se` to use.                                                                                      |
 
 ## License 📄
 
