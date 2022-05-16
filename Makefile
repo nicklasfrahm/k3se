@@ -43,8 +43,8 @@ uninstall:
 .PHONY: docker
 docker:
 	docker build \
-	  -t k3se:latest \
-	  -t k3se:$(VERSION) \
+	  -t $(TARGET):latest \
+	  -t $(TARGET):$(VERSION) \
 	  --build-arg VERSION=$(VERSION) \
 	  -f build/package/Dockerfile .
 
