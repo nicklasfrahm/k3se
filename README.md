@@ -60,12 +60,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Deploy k3s cluster
-        uses: nicklasfrahm/k3se@v0
+        uses: nicklasfrahm/k3se@main
         with:
           command: up examples/standalone.yml
 ```
 
-### Input variables
+### Input variables ⚙️
 
 See [action.yml](./action.yml) for more detailed information. **Please note that all input variables must have string values. It is thus recommend to always use quotes.**
 
