@@ -62,7 +62,7 @@ jobs:
       - name: Deploy k3s cluster
         uses: nicklasfrahm/k3se@v0
         with:
-          config: "examples/standalone.yml"
+          command: up examples/standalone.yml
 ```
 
 ### Input variables
