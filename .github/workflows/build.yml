@@ -130,7 +130,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: ${{ github.ref_protected }}
+          push: ${{ steps.semantic.outputs.new-release-published }}
           build-args: |
             VERSION=v${{ steps.semantic.outputs.release-version }}
 
