@@ -122,6 +122,7 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	if node.Role == RoleAgent {
 		config.WriteKubeconfigMode = ""
 		config.TLSSAN = nil
+		config.Disable = nil
 	}
 
 	if node.Role == RoleServer {
