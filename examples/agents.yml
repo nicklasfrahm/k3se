@@ -6,13 +6,17 @@ version: stable
 # to all nodes in the cluster. All options are equivalent to the
 # commmand line options of the `k3s` command.
 cluster:
-  # It is highly recommended to always specify this option as it
-  # is used to determine the server URL of the cluster.
-  tls-san:
-    - 192.168.56.11
-  write-kubeconfig-mode: "644"
-  node-label:
-    - example=agents
+  server:
+    # It is highly recommended to always specify this option as it
+    # is used to determine the server URL of the cluster.
+    tls-san:
+      - 192.168.56.11
+    write-kubeconfig-mode: "644"
+    node-label:
+      - example=agents
+  agent:
+    node-label:
+      - example=agents
 
 # A list of all nodes in the cluster and their connection information.
 nodes:
@@ -21,7 +25,7 @@ nodes:
       host: 192.168.56.11
       user: vagrant
       key-file: ~/.ssh/id_ed25519
-    config:
+    server:
       node-label:
         - hostname=kube1
 
@@ -30,7 +34,7 @@ nodes:
       host: 192.168.56.12
       user: vagrant
       key-file: ~/.ssh/id_ed25519
-    config:
+    agent:
       node-label:
         - hostname=kube2
 
@@ -39,6 +43,6 @@ nodes:
       host: 192.168.56.13
       user: vagrant
       key-file: ~/.ssh/id_ed25519
-    config:
+    agent:
       node-label:
         - hostname=kube3

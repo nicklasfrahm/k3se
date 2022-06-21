@@ -3,6 +3,7 @@ module github.com/nicklasfrahm/k3se
 go 1.17
 
 require (
+	github.com/imdario/mergo v0.3.13
 	github.com/pkg/sftp v1.13.5
 	github.com/rs/zerolog v1.27.0
 	github.com/spf13/cobra v1.4.0
@@ -17,7 +18,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/imdario/mergo v0.3.5 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/fs v0.1.0 // indirect

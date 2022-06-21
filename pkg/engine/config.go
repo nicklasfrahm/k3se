@@ -3,7 +3,6 @@ package engine
 import (
 	"errors"
 	"io/ioutil"
-	"reflect"
 	"strings"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
@@ -27,42 +26,10 @@ var (
 	Channels = []string{"stable", "latest", "testing"}
 )
 
-// K3sConfig describes the configuration of a k3s node.
-type K3sConfig struct {
-	WriteKubeconfigMode string   `yaml:"write-kubeconfig-mode,omitempty"`
-	TLSSAN              []string `yaml:"tls-san,omitempty"`
-	Disable             []string `yaml:"disable,omitempty"`
-	AdvertiseAddress    string   `yaml:"advertise-address,omitempty"`
-	FlannelIface        string   `yaml:"flannel-iface,omitempty"`
-	NodeIP              string   `yaml:"node-ip,omitempty"`
-	NodeExternalIP      string   `yaml:"node-external-ip,omitempty"`
-	NodeLabel           []string `yaml:"node-label,omitempty"`
-	// TODO: Add missing config options as specified here:
-	//       https://rancher.com/docs/k3s/latest/en/installation/install-options/server-config/#k3s-server-cli-help
-}
-
-// Merge combines two configurations.
-func (c K3sConfig) Merge(config *K3sConfig) K3sConfig {
-	merged := c
-
-	dst := reflect.ValueOf(&merged).Elem()
-	src := reflect.ValueOf(config).Elem()
-
-	for i := 0; i < src.Type().NumField(); i++ {
-		field := src.Type().Field(i)
-
-		if field.Type.Kind() == reflect.Slice {
-			// Merge slices.
-			dst.Field(i).Set(reflect.AppendSlice(dst.Field(i), src.Field(i)))
-		} else {
-			// Overwrite field value if not empty.
-			if !src.Field(i).IsZero() {
-				dst.Field(i).Set(src.Field(i))
-			}
-		}
-	}
-
-	return merged
+// Cluster defines share settings across all servers and agents.
+type Cluster struct {
+	Server Server `yaml:"server,omitempty"`
+	Agent  Agent  `yaml:"agent,omitempty"`
 }
 
 // Config describes the state of a k3s cluster. For general
@@ -73,9 +40,9 @@ type Config struct {
 	// channel as specified in the k3s installation options.
 	Version string `yaml:"version"`
 
-	// Cluster is the desired content of the k3s configuration file
-	// that is shared among all nodes.
-	Cluster K3sConfig `yaml:"cluster"`
+	// Cluster defines shared configuration settings across all
+	// servers and agents.
+	Cluster Cluster `yaml:"cluster"`
 
 	// Nodes is a list of nodes to deploy the cluster on. It stores
 	// both, connection information and node-specific configuration.

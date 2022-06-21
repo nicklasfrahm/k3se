@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/imdario/mergo"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/tools/clientcmd"
@@ -82,8 +83,8 @@ func (e *Engine) SetSpec(config *Config) error {
 	// If not, the host address of the first controlplane will be used.
 	firstControlplane := e.FilterNodes(RoleServer)[0]
 	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
-	if len(e.Spec.Cluster.TLSSAN) > 0 {
-		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.TLSSAN[0])
+	if len(e.Spec.Cluster.Server.TLSSAN) > 0 {
+		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.Server.TLSSAN[0])
 	}
 
 	return nil
@@ -114,26 +115,36 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	// TODO: Make the engine smarter by checking if the node has multiple interfaces
 	//       and configuring the "node-ip" if HA is enabled.
 
-	// Create the node configuration.
-	config := e.Spec.Cluster.Merge(&node.Config)
-
-	// Remove configuration keys that are server-specific.
-	// TODO: Evaluate option to have separate server and agent configuration structs.
-	if node.Role == RoleAgent {
-		config.WriteKubeconfigMode = ""
-		config.TLSSAN = nil
-		config.Disable = nil
-	}
-
+	// Create server or agent configuration.
+	var configBytes []byte
 	if node.Role == RoleServer {
+		config := new(Server)
+
 		// This ensures that agents can connect to the servers in Vagrant. For reference, see:
 		// https://github.com/alexellis/k3sup/issues/306#issuecomment-1059986048
 		config.AdvertiseAddress = node.SSH.Host
+
+		if err := mergo.Merge(config, e.Spec.Cluster.Server, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
+			return err
+		}
+
+		configBytes, err = yaml.Marshal(config)
+		if err != nil {
+			return err
+		}
 	}
 
-	configBytes, err := yaml.Marshal(config)
-	if err != nil {
-		return err
+	if node.Role == RoleAgent {
+		config := new(Agent)
+
+		if err := mergo.Merge(config, e.Spec.Cluster.Agent, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
+			return err
+		}
+
+		configBytes, err = yaml.Marshal(config)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := node.Upload("/tmp/k3se/config.yaml", bytes.NewReader(configBytes)); err != nil {

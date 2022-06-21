@@ -21,7 +21,8 @@ const (
 type Node struct {
 	Role   Role        `yaml:"role"`
 	SSH    sshx.Config `yaml:"ssh"`
-	Config K3sConfig   `yaml:"config"`
+	Server Server      `yaml:"server,omitempty"`
+	Agent  Agent       `yaml:"agent,omitempty"`
 
 	Client *sshx.Client   `yaml:"-"`
 	Logger zerolog.Logger `yaml:"-"`
