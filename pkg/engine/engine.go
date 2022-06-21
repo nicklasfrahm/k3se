@@ -118,30 +118,28 @@ func (e *Engine) ConfigureNode(node *Node) error {
 	// Create server or agent configuration.
 	var configBytes []byte
 	if node.Role == RoleServer {
-		config := new(Server)
-
 		// This ensures that agents can connect to the servers in Vagrant. For reference, see:
 		// https://github.com/alexellis/k3sup/issues/306#issuecomment-1059986048
-		config.AdvertiseAddress = node.SSH.Host
+		if node.Server.AdvertiseAddress == "" {
+			node.Server.AdvertiseAddress = node.SSH.Host
+		}
 
-		if err := mergo.Merge(config, e.Spec.Cluster.Server, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
+		if err := mergo.Merge(&node.Server, e.Spec.Cluster.Server, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
 			return err
 		}
 
-		configBytes, err = yaml.Marshal(config)
+		configBytes, err = yaml.Marshal(&node.Server)
 		if err != nil {
 			return err
 		}
 	}
 
 	if node.Role == RoleAgent {
-		config := new(Agent)
-
-		if err := mergo.Merge(config, e.Spec.Cluster.Agent, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
+		if err := mergo.Merge(&node.Agent, e.Spec.Cluster.Agent, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
 			return err
 		}
 
-		configBytes, err = yaml.Marshal(config)
+		configBytes, err = yaml.Marshal(&node.Agent)
 		if err != nil {
 			return err
 		}

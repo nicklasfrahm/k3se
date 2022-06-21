@@ -65,6 +65,8 @@ type Server struct {
 	NodeIP                        []string `yaml:"node-ip,omitempty"`
 	NodeExternalIP                []string `yaml:"node-external-ip,omitempty"`
 	ResolvConf                    string   `yaml:"resolv-conf,omitempty"`
+	FlannelIface                  string   `yaml:"flannel-iface,omitempty"`
+	FlannelConf                   string   `yaml:"flannel-conf,omitempty"`
 	KubeletArg                    []string `yaml:"kubelet-arg,omitempty"`
 	KubeProxyArg                  []string `yaml:"kube-proxy-arg,omitempty"`
 	ProtectKernelDefaults         bool     `yaml:"protect-kernel-defaults,omitempty"`
