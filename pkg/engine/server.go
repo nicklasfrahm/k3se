@@ -13,7 +13,7 @@ type Server struct {
 	AdvertisePort                 int      `yaml:"advertise-port,omitempty"`
 	TLSSAN                        []string `yaml:"tls-san,omitempty"`
 	DataDir                       string   `yaml:"data-dir,omitempty"`
-	ClusterCIDR                   string   `yaml:"cluster-cidr,omitempty"`
+	ClusterCIDR                   []string `yaml:"cluster-cidr,omitempty"`
 	ServiceCIDR                   []string `yaml:"service-cidr,omitempty"`
 	ServiceNodePortRange          string   `yaml:"service-node-port-range,omitempty"`
 	ClusterDNS                    []string `yaml:"cluster-dns,omitempty"`
