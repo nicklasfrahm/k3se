@@ -33,12 +33,12 @@ jobs:
           - darwin/arm64
           - windows/amd64
     steps:
-      - name: Check out
+      - name: Clone repository
         if: ${{ github.event_name != 'pull_request_target' }}
         uses: actions/checkout@v3
 
         # Allow "dependabot[bot]" to verify its changes with access to secrets and modified code.
-      - name: Checkout for Dependabot
+      - name: Clone repository for Dependabot
         if: ${{ github.event_name == 'pull_request_target' }}
         uses: actions/checkout@v3
         with:
@@ -79,11 +79,12 @@ jobs:
       (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]') ||
       (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]')
     steps:
-      - name: Check out untrusted sources
+      - name: Clone repository
         if: ${{ github.event_name != 'pull_request_target' }}
         uses: actions/checkout@v3
 
-      - name: Check out trusted sources
+        # Allow "dependabot[bot]" to verify its changes with access to secrets and modified code.
+      - name: Clone repository for Dependabot
         if: ${{ github.event_name == 'pull_request_target' }}
         uses: actions/checkout@v3
         with:

@@ -6,8 +6,6 @@
 
 A lightweight Kubernetes engine that deploys `k3s` clusters declaratively based on a cluster configuration file. The name is an abbreviation for _k3s engine_ and a hommage to the German word for cheese, _Käse [ˈkɛːzə]_.
 
-**🐉 Here be dragons:** As the version indicates, this is experimental software. The API is subject to change and there are no stability guarantees. Use at your own risk. We recommend to have a disaster recovery strategy in place.
-
 ## Quickstart 💡
 
 If you want to test `k3se` you can use [Vagrant][website-vagrant]. All examples in the `examples/` folder can be used with the provided `Vagrantfile` that provisions 3 Ubuntu VMs. To bring up the VMs you can run the following command:
