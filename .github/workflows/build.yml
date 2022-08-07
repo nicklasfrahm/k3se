@@ -47,6 +47,7 @@ jobs:
       - name: Set up Go compiler
         uses: actions/setup-go@v3
         with:
+          go-version-file: go.mod
           check-latest: true
 
       - name: Fetch version from git history
