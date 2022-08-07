@@ -1,4 +1,0 @@
-# Reference: https://github.com/ahmadnassri/action-dependabot-auto-merge#githubworkflowsauto-mergeyml
-- match:
-    dependency_type: all
-    update_type: all

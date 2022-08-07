@@ -143,6 +143,7 @@ jobs:
       - uses: ahmadnassri/action-dependabot-auto-merge@v2
         with:
           github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          target: all
 
   release:
     name: Release
