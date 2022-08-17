@@ -3,8 +3,8 @@ package sshx
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"os/user"
 
 	"github.com/pkg/sftp"
@@ -99,7 +99,7 @@ func (client *Client) normalizeConfig(config *Config) (*ssh.ClientConfig, error)
 			config.KeyFile = userInfo.HomeDir + config.KeyFile[1:]
 		}
 
-		keyBytes, err := ioutil.ReadFile(config.KeyFile)
+		keyBytes, err := os.ReadFile(config.KeyFile)
 		if err != nil {
 			return nil, err
 		}

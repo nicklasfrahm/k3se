@@ -3,7 +3,7 @@ package engine
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -309,7 +309,7 @@ func (e *Engine) KubeConfig(outputPath string) error {
 	}
 
 	// Read existing local config.
-	oldConfigBytes, err := ioutil.ReadFile(outputPath)
+	oldConfigBytes, err := os.ReadFile(outputPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err
@@ -354,7 +354,7 @@ func (e *Engine) fetchInstallationScript() ([]byte, error) {
 		}
 		defer resp.Body.Close()
 
-		e.installer, err = ioutil.ReadAll(resp.Body)
+		e.installer, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}

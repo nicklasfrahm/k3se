@@ -2,7 +2,7 @@ package engine
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/nicklasfrahm/k3se/pkg/sshx"
@@ -98,7 +98,7 @@ func (c *Config) Verify() error {
 // LoadConfig sets up the configuration parser and loads
 // the configuration file.
 func LoadConfig(configFile string) (*Config, error) {
-	configBytes, err := ioutil.ReadFile(configFile)
+	configBytes, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
