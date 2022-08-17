@@ -1,0 +1,52 @@
+# Version may either be a specific k3s version or a release channel
+# as listed here: https://update.k3s.io/v1-release/channels
+version: stable
+
+# Cluster provides cluster-wide settings that should be applied
+# to all nodes in the cluster. All options are equivalent to the
+# commmand line options of the `k3s` command.
+cluster:
+  server:
+    # It is highly recommended to always specify this option as it
+    # is used to determine the server URL of the cluster.
+    tls-san:
+      - k3se.nicklasfrahm.xyz
+    disable:
+      - traefik
+    flannel-iface: eth0
+    cluster-cidr:
+      - 10.254.0.0/16
+    service-cidr:
+      - 10.255.0.0/16
+    cluster-dns:
+      - 10.255.0.10
+
+# A list of all nodes in the cluster and their connection information.
+nodes:
+  - role: server
+    ssh:
+      host: 10.0.11.241
+      fingerprint: SHA256:t/bwWCelgcAEYmQW9XbM4p31e1Qq70ZPWOKK+FRxBCc
+      user: nicklasfrahm
+      key-file: ~/.ssh/id_ed25519
+
+  - role: server
+    ssh:
+      host: 10.0.11.242
+      fingerprint: SHA256:OkCD98O5RdzBYc8BIdSpPQkTeNTtYuaEGODThqi/4sk
+      user: nicklasfrahm
+      key-file: ~/.ssh/id_ed25519
+
+  - role: server
+    ssh:
+      host: 10.0.11.243
+      fingerprint: SHA256:GnIesLNIAwgJJX9s3M26mmkXlM90DJ0LS1ZyIoCa5V0
+      user: nicklasfrahm
+      key-file: ~/.ssh/id_ed25519
+
+# An SSH proxy, also known as jumpbox or a bastion host
+# can be used to access nodes in a private network.
+ssh-proxy:
+  host: k3se.nicklasfrahm.xyz
+  user: nicklasfrahm
+  key-file: ~/.ssh/id_ed25519

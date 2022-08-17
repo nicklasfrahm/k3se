@@ -51,3 +51,31 @@ docker:
 .PHONY: clean
 clean:
 	@rm -rvf bin
+
+.PHONY: demo-up
+demo-up: install
+	@echo -n "\e[35m==>\e[0m "
+	k3se up deploy/demo/k3se.yaml
+	@echo -n "\e[35m==>\e[0m "
+	kubectx admin@k3se.nicklasfrahm.xyz
+	@echo -n "\e[35m==>\e[0m "
+	kubectl create ns traefik --dry-run=client -o yaml | kubectl apply -f -
+	@echo -n "\e[35m==>\e[0m "
+	helm dependency update deploy/demo/traefik
+	@echo -n "\e[35m==>\e[0m "
+	helm upgrade --install traefik deploy/demo/traefik --namespace traefik
+	@echo -n "\e[35m==>\e[0m "
+	kubectl create ns cert-manager --dry-run=client -o yaml | kubectl apply -f -
+	@echo -n "\e[35m==>\e[0m "
+	helm dependency update deploy/demo/cert-manager
+	@echo -n "\e[35m==>\e[0m "
+	helm upgrade --install cert-manager deploy/demo/cert-manager --namespace cert-manager
+	@echo -n "\e[35m==>\e[0m "
+	kubectl apply -f deploy/demo/clusterissuers
+	@echo -n "\e[35m==>\e[0m "
+	kubectl apply -f deploy/demo/app
+
+.PHONY: demo-down
+demo-down:
+	@echo -n "\e[35m==>\e[0m "
+	k3se down deploy/demo/k3se.yaml

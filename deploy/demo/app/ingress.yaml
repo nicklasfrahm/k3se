@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kuard
+  labels:
+    app.kubernetes.io/name: kuard
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - k3se.nicklasfrahm.xyz
+      secretName: kuard-tls
+  rules:
+    - host: k3se.nicklasfrahm.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kuard
+                port:
+                  name: http

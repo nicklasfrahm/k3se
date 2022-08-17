@@ -1,0 +1,8 @@
+apiVersion: v2
+name: traefik
+description: An umbrella chart to configure the Traefik ingress controller.
+version: 10.24.0
+dependencies:
+  - name: traefik
+    version: 10.24.0
+    repository: https://helm.traefik.io/traefik

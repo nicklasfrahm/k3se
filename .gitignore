@@ -3,3 +3,6 @@ bin/
 
 # Ignore Vagrant state.
 .vagrant/
+
+# Ignore downloaded Helm charts.
+deploy/demo/**/charts
