@@ -3,6 +3,20 @@ traefik:
     enabled: yes
     isDefaultClass: yes
 
+  autoscaling:
+    enabled: true
+    minReplicas: 6
+    maxReplicas: 9
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          targetAverageUtilization: 60
+      - type: Resource
+        resource:
+          name: memory
+          targetAverageUtilization: 60
+
   service:
     enabled: yes
     type: LoadBalancer

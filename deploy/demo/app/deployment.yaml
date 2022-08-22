@@ -8,7 +8,7 @@ spec:
       app.kubernetes.io/name: kuard
   # I don't want to mess with anti-affinities so let's
   # just create enough pods to spread them across nodes.
-  replicas: 9
+  replicas: 6
   template:
     metadata:
       labels:
