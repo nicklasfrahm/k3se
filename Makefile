@@ -6,6 +6,7 @@ GOARCH		:= $(shell echo $(PLATFORM) | cut -d "/" -f 2)
 SUFFIX		:= $(GOOS)-$(GOARCH)
 VERSION		?= $(shell git describe --always --tags --dirty)
 BUILD_FLAGS	:= -ldflags="-s -w -X github.com/nicklasfrahm/$(TARGET)/cmd.version=$(VERSION)"
+DESTDIR		:= /usr/local/bin
 
 # Adjust the binary name on Windows.
 ifeq ($(GOOS),windows)
@@ -29,16 +30,15 @@ vagrant-up:
 vagrant-down:
 	cd deploy/vagrant; vagrant destroy -f
 
-/usr/local/bin/$(TARGET): bin/$(TARGET)-$(SUFFIX)
-	@sudo cp $^ $@
-	@sudo chmod 755 $@
+$(DESTDIR)/$(TARGET): bin/$(TARGET)-$(SUFFIX)
+	sudo install -Dm 755 $^ $@
 
 .PHONY: install
-install: /usr/local/bin/$(TARGET)
+install: $(DESTDIR)/$(TARGET)
 
 .PHONY: uninstall
 uninstall:
-	@sudo rm -f /usr/local/bin/$(TARGET)
+	@sudo rm -f $(DESTDIR)/$(TARGET)
 
 .PHONY: docker
 docker:
