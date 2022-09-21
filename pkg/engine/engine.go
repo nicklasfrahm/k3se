@@ -79,12 +79,20 @@ func (e *Engine) SetSpec(config *Config) error {
 
 	e.Spec = config
 
+	port := 6443
+	if e.Spec.Cluster.Server.HTTPSListenPort != 0 {
+		port = e.Spec.Cluster.Server.HTTPSListenPort
+	}
+	if e.Spec.Cluster.Server.AdvertisePort != 0 {
+		port = e.Spec.Cluster.Server.AdvertisePort
+	}
+
 	// If TLS SANs are configured, the first one will be used as the server URL.
 	// If not, the host address of the first controlplane will be used.
 	firstControlplane := e.FilterNodes(RoleServer)[0]
-	e.serverURL = fmt.Sprintf("https://%s:6443", firstControlplane.SSH.Host)
+	e.serverURL = fmt.Sprintf("https://%s:%d", firstControlplane.SSH.Host, port)
 	if len(e.Spec.Cluster.Server.TLSSAN) > 0 {
-		e.serverURL = fmt.Sprintf("https://%s:6443", e.Spec.Cluster.Server.TLSSAN[0])
+		e.serverURL = fmt.Sprintf("https://%s:%d", e.Spec.Cluster.Server.TLSSAN[0], port)
 	}
 
 	return nil
@@ -283,8 +291,13 @@ func (e *Engine) KubeConfig(outputPath string) error {
 			return err
 		}
 
-		// Use the FQDN of the API server as the cluster name.
+		// Use the FQDN of the API server, as the cluster name and append the port only if it's
+		// not the default port for the Kubernetes API (6443). This is only done to ensure
+		// backward compatibility with previous versions of the CLI.
 		cluster := serverURL.Hostname()
+		if serverURL.Port() != "6443" {
+			cluster = fmt.Sprintf("%s:%s", cluster, serverURL.Port())
+		}
 		context := "admin@" + cluster
 
 		newConfig.Clusters[cluster] = newConfig.Clusters["default"]
