@@ -6,7 +6,7 @@ require (
 	github.com/imdario/mergo v0.3.13
 	github.com/pkg/sftp v1.13.5
 	github.com/rs/zerolog v1.28.0
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/client-go v0.25.3
