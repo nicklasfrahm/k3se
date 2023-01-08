@@ -77,8 +77,11 @@ func NewClient(config *Config, options ...Option) (*Client, error) {
 		}
 	}
 
-	if client.SFTP, err = sftp.NewClient(client.SSH); err != nil {
-		return nil, err
+	// Prevent issues with SSH servers that do not permit SFTP.
+	if !client.STFPDisabled {
+		if client.SFTP, err = sftp.NewClient(client.SSH); err != nil {
+			return nil, err
+		}
 	}
 
 	return client, nil

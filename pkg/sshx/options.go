@@ -8,9 +8,10 @@ import (
 
 // Options contains the configuration for an operation.
 type Options struct {
-	Logger  *zerolog.Logger
-	Proxy   *Client
-	Timeout time.Duration
+	Logger       *zerolog.Logger
+	Proxy        *Client
+	Timeout      time.Duration
+	STFPDisabled bool
 }
 
 // Option applies a configuration option
@@ -33,9 +34,10 @@ func GetDefaultOptions() *Options {
 	logger := zerolog.Nop()
 
 	return &Options{
-		Proxy:   nil,
-		Timeout: time.Second * 5,
-		Logger:  &logger,
+		Proxy:        nil,
+		Timeout:      time.Second * 5,
+		Logger:       &logger,
+		STFPDisabled: false,
 	}
 }
 
@@ -60,6 +62,14 @@ func WithProxy(proxy *Client) Option {
 func WithTimeout(timeout time.Duration) Option {
 	return func(options *Options) error {
 		options.Timeout = timeout
+		return nil
+	}
+}
+
+// WithSTFPDisabled allows to disable the SFTP client.
+func WithSTFPDisabled() Option {
+	return func(options *Options) error {
+		options.STFPDisabled = true
 		return nil
 	}
 }
