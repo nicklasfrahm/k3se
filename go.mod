@@ -3,7 +3,7 @@ module github.com/nicklasfrahm/k3se
 go 1.19
 
 require (
-	github.com/imdario/mergo v0.3.13
+	github.com/imdario/mergo v0.3.14
 	github.com/pkg/sftp v1.13.5
 	github.com/rs/zerolog v1.29.0
 	github.com/spf13/cobra v1.6.1
