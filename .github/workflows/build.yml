@@ -45,7 +45,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Go compiler
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
           check-latest: true
