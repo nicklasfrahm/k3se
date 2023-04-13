@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/imdario/mergo v0.3.15
 	github.com/pkg/sftp v1.13.5
-	github.com/rs/zerolog v1.29.0
+	github.com/rs/zerolog v1.29.1
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
