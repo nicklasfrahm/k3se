@@ -13,14 +13,18 @@ import (
 
 // Config is a flat configuration for an SSH connection.
 type Config struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	User        string `yaml:"user"`
-	Password    string `yaml:"password"`
-	KeyFile     string `yaml:"key-file"`
-	Key         string `yaml:"key"`
-	Passphrase  string `yaml:"passphrase"`
-	Fingerprint string `yaml:"fingerprint"`
+	Host              string   `yaml:"host"`
+	Port              int      `yaml:"port"`
+	User              string   `yaml:"user"`
+	Password          string   `yaml:"password"`
+	KeyFile           string   `yaml:"key-file"`
+	Key               string   `yaml:"key"`
+	Passphrase        string   `yaml:"passphrase"`
+	Fingerprint       string   `yaml:"fingerprint"`
+	HostKeyAlgorithms []string `yaml:"host-key-algorithms"`
+	KeyExchanges      []string `yaml:"key-exchanges"`
+	Ciphers           []string `yaml:"ciphers"`
+	MACs              []string `yaml:"macs"`
 }
 
 // Client is an augmented SSH client.
@@ -155,11 +159,19 @@ func (client *Client) normalizeConfig(config *Config) (*ssh.ClientConfig, error)
 		hostKeyCallback = ssh.InsecureIgnoreHostKey()
 	}
 
+	var connConfig = ssh.Config{
+		KeyExchanges: config.KeyExchanges,
+		Ciphers:      config.Ciphers,
+		MACs:         config.MACs,
+	}
+
 	return &ssh.ClientConfig{
-		Auth:            []ssh.AuthMethod{authMethod},
-		HostKeyCallback: hostKeyCallback,
-		User:            config.User,
-		Timeout:         client.Timeout,
+		Auth:              []ssh.AuthMethod{authMethod},
+		HostKeyCallback:   hostKeyCallback,
+		User:              config.User,
+		Timeout:           client.Timeout,
+		HostKeyAlgorithms: config.HostKeyAlgorithms,
+		Config:            connConfig,
 	}, nil
 }
 
