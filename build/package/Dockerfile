@@ -1,7 +1,7 @@
 FROM golang:alpine AS build
 
 WORKDIR /app
-RUN apk add --no-cache make
+RUN apk add --no-cache make upx
 
 # Install dependencies.
 COPY go.* ./
@@ -10,7 +10,7 @@ RUN go mod download
 # Copy source files and build application.
 COPY . /app
 ARG VERSION
-RUN VERSION=${VERSION} make -B && mv bin/* /app/bin/k3se
+RUN UPX=-9 VERSION=${VERSION} make -B && mv bin/* /app/bin/k3se
 
 # Create minimal container image.
 FROM alpine AS run
