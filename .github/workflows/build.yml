@@ -35,12 +35,12 @@ jobs:
     steps:
       - name: Clone repository
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
         # Allow "dependabot[bot]" to verify its changes with access to secrets and modified code.
       - name: Clone repository for Dependabot
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -82,12 +82,12 @@ jobs:
     steps:
       - name: Clone repository
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
         # Allow "dependabot[bot]" to verify its changes with access to secrets and modified code.
       - name: Clone repository for Dependabot
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -101,7 +101,7 @@ jobs:
 
       - name: Generate container metadata
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.CONTAINER_IMAGE }}
           tags: |
@@ -111,20 +111,20 @@ jobs:
             type=raw,value=v${{ steps.semantic.outputs.release-version }},enable=${{ steps.semantic.outputs.new-release-published }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push container image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: build/package/Dockerfile
           cache-from: type=registry,ref=${{ env.CONTAINER_IMAGE }}:main
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download release artifacts
         uses: actions/download-artifact@v3
