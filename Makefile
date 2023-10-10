@@ -42,11 +42,12 @@ uninstall:
 
 .PHONY: docker
 docker:
-	docker build \
+	@docker build \
 	  -t $(TARGET):latest \
 	  -t $(TARGET):$(VERSION) \
 	  --build-arg VERSION=$(VERSION) \
 	  -f build/package/Dockerfile .
+	@if command -v trivy >/dev/null; then trivy image $(TARGET); fi
 
 .PHONY: clean
 clean:
