@@ -111,7 +111,7 @@ jobs:
             type=raw,value=v${{ steps.semantic.outputs.release-version }},enable=${{ steps.semantic.outputs.new-release-published }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
