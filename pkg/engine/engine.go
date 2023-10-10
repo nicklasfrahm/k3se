@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/tools/clientcmd"
