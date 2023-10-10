@@ -6,3 +6,7 @@ bin/
 
 # Ignore downloaded Helm charts.
 deploy/demo/**/charts
+
+# Ignore cosign keys.
+*.key
+*.pub
