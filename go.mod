@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.0
 	github.com/pkg/sftp v1.13.6
 	github.com/rs/zerolog v1.31.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	golang.org/x/crypto v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/client-go v0.28.3
