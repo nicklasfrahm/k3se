@@ -68,7 +68,7 @@ jobs:
         run: UPX=-9 PLATFORM=${{ matrix.platform }} make build
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: bin/*
