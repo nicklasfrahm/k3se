@@ -7,7 +7,7 @@ require (
 	github.com/pkg/sftp v1.13.6
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/cobra v1.8.0
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/client-go v0.29.0
 )
