@@ -124,7 +124,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push container image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           file: build/package/Dockerfile
           cache-from: type=registry,ref=${{ env.CONTAINER_IMAGE }}:main
