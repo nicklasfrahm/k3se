@@ -67,10 +67,15 @@ jobs:
         if: github.ref_protected == false
         run: UPX=-9 PLATFORM=${{ matrix.platform }} make build
 
+      - name: Format platform
+        id: platform
+        run: |
+          echo "platform=$(echo ${{ matrix.platform }} | tr "/" "-")" >>"$GITHUB_OUTPUT"
+
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: binary-${{ matrix.platform }}
+          name: binary-${{ steps.platform.outputs.platform }}
           path: bin/*
 
   container:
