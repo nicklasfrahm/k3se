@@ -70,7 +70,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: binary-${{ matrix.platform }}
           path: bin/*
 
   container:
@@ -159,8 +159,9 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binaries
           path: release
+          pattern: binary-*
+          merge-multiple: true
 
       - name: Create release
         uses: codfish/semantic-release-action@v3
