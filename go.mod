@@ -9,7 +9,7 @@ require (
 	github.com/pkg/sftp v1.13.7
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
-	golang.org/x/crypto v0.28.0
+	golang.org/x/crypto v0.29.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/client-go v0.31.2
 )
@@ -19,7 +19,6 @@ require (
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/imdario/mergo v1.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -33,14 +32,12 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/term v0.25.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/term v0.26.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
-	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apimachinery v0.31.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078 // indirect
