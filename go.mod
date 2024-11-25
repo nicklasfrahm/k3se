@@ -11,7 +11,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/crypto v0.29.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/client-go v0.31.2
+	k8s.io/client-go v0.31.3
 )
 
 require (
@@ -38,7 +38,7 @@ require (
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apimachinery v0.31.2 // indirect
+	k8s.io/apimachinery v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
