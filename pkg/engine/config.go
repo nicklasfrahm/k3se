@@ -62,6 +62,7 @@ func (c *Config) Verify() error {
 		return errors.New("configuration empty")
 	}
 
+	// TODO: Also allow versions in the format of `v1.24.4+k3s1`.
 	channelValid := false
 	for _, channel := range Channels {
 		if channel == c.Version {
